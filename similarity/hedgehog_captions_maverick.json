@@ -1,0 +1,28 @@
+{
+  "source_image": "/mnt/file_server/Nyx/test-images/IMG_20260128_074513.jpg",
+  "grid_size": 4,
+  "model": "meta/llama-4-maverick-instruct",
+  "prompt": "You are looking at a small cropped patch from a larger photograph. You cannot see the full image \u2014 only this fragment. Describe what you see in 2-3 short phrases. What does it look like? What could it be? Include your uncertain impressions \u2014 if it could be feathers or grass or brushstrokes, say so. Be specific about textures, colours, and shapes. Do not guess what the full image is.",
+  "patches": [
+    {
+      "row": 0,
+      "col": 2,
+      "caption": "I see a tangle of curved, golden-brown strands with soft, feathery textures. The shapes are irregular and layered, with some strands overlapping or crossing over others. It could be a close-up of feathers, or possibly a patch of dry grass or a thicket of twigs, but it also resembles expressive brushstrokes in a painting, with visible ridges and grooves suggesting thick paint. The colour is warm and muted, with hints of darker brown or umber in the shadows."
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "caption": "I see curved, layered shapes in shades of golden brown and dark grey. The texture appears soft and fibrous, possibly like feathers or soft fabric. The edges are blurry, with subtle gradations of tone, suggesting gentle folds or curves."
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "caption": "I see a tangle of dark, curved lines and soft, feathery textures in muted shades of brown and beige. The shapes resemble twisted fibres or possibly feathers, with gentle gradations of tone suggesting depth and layering. The overall effect is organic and tactile, like a close-up of fur or a dense thicket of vegetation."
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "caption": "I see a tangle of curved, golden-brown strands with soft, feathery textures. The colours range from warm beige to deep umber, with hints of darker shadow. It could be a close-up of feathers, or possibly a textured, expressive brushstroke or a clump of dry grass or reeds. The shapes are organic and irregular, with curved tendrils overlapping and blending together."
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "source_image": "/mnt/file_server/Nyx/test-images/IMG_20260128_074513.jpg",
+  "grid_size": 4,
+  "model": "meta/llama-4-maverick-instruct",
+  "prompt": "You see a small cropped fragment. You have no idea what the full image is. List 5 wildly different things this fragment could be part of. Be specific and imaginative. Format: just the list, one per line.",
+  "patches": [
+    {
+      "row": 0,
+      "col": 0,
+      "caption": "A fragment of a vintage typewriter key, possibly from a 1920s Underwood No. 5, with the letter \"E\" worn off.\nThe rusty edge of a spaceship's control panel, damaged in a catastrophic battle on a distant planet.\nA piece of a 19th-century lace shawl, intricately patterned with florals and vines, made by a skilled Belgian artisan.\nA fragment of a giant, ancient stone statue, depicting a mythical creature with scales and wings, unearthed in a lost city.\nA torn corner of a surrealist painting by Salvador Dali, featuring a melting clock or other bizarre dream imagery."
+    },
+    {
+      "row": 0,
+      "col": 1,
+      "caption": "A giant spider's eye in a dark fantasy creature's portrait\nThe rusty hinge of an abandoned spaceship's cargo bay door\nA fragment of a broken clock face on a deserted, ancient clock tower\nThe glint of a sword hilt in a medieval jousting tournament painting\nA splash of paint on a Jackson Pollock-inspired abstract art piece"
+    },
+    {
+      "row": 0,
+      "col": 2,
+      "caption": "A tentacle of a giant squid rising out of the depths of a dark ocean trench.\nThe rusty edge of a vintage car's chrome bumper, abandoned in a junkyard overgrown with weeds.\nA delicate petal from a rare, exotic flower blooming in a secret garden hidden within a mystical forest.\nThe curved blade of a samurai sword, forged in feudal Japan and now displayed in a modern art museum.\nA fragment of a shattered stained-glass window depicting a medieval saint, lying on the floor of a Gothic cathedral."
+    },
+    {
+      "row": 0,
+      "col": 3,
+      "caption": "A wing of a vintage airplane caught in a nostalgic photograph\nThe intricate scales of a dragon's hide in a fantasy novel illustration\nA detail from a surrealist painting depicting a melting clock\nThe rusty hull of a sunken ship in a deep-sea explorer's documentary\nA fragment of a futuristic cityscape on a distant planet in a sci-fi movie poster"
+    },
+    {
+      "row": 1,
+      "col": 0,
+      "caption": "A close-up of a dragon's scale on a medieval-style fantasy creature's back\nThe metallic surface of a futuristic spaceship's control panel\nA detail from a surrealist painting of a melting clock\nThe intricate pattern on a traditional Japanese kimono\nA fragment of a neon sign from a dystopian cyberpunk cityscape"
+    },
+    {
+      "row": 1,
+      "col": 1,
+      "caption": "A slice of pizza being devoured by a giant, fire-breathing T-Rex in a post-apocalyptic wasteland.\nThe intricate, swirling pattern on a 19th-century porcelain vase displayed in a dimly lit, ornate museum gallery.\nA torn piece of a vintage poster advertising a 1920s speakeasy hidden in a dusty, forgotten alleyway.\nThe glowing, neon-lit control panel of a futuristic, high-tech spaceship hurtling through a distant galaxy.\nA delicate, hand-painted watercolor depiction of a serene, misty mountain landscape in a tranquil, traditional Japanese garden."
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "caption": "A glowing jellyfish in the bioluminescent bay of Vaadhoo Island at dusk.\nThe rusting hull of a 19th-century shipwreck on the ocean floor near the Great Barrier Reef.\nA fresco on the ceiling of the Sistine Chapel depicting a scene from Genesis.\nThe intricate pattern on a 1920s Art Deco vase by Ren\u00e9 Lalique.\nA nebula in a distant galaxy, captured by the Hubble Space Telescope."
+    },
+    {
+      "row": 1,
+      "col": 3,
+      "caption": "A golden fin protruding from the water, possibly part of a majestic fish in a coral reef.\nThe rusty edge of a vintage typewriter key, worn from years of use in a 1920s writer's attic.\nA fragment of a shattered stained glass window depicting a saint's robe, from a Gothic cathedral destroyed in a war.\nThe tip of a SpaceX rocket booster, charred from re-entry into the Earth's atmosphere after a failed landing attempt.\nA delicate, hand-painted porcelain flower petal, part of a 19th-century tea set crafted by a renowned Chinese artisan."
+    },
+    {
+      "row": 2,
+      "col": 0,
+      "caption": "A golden crown on the head of a 19th-century vampire king in a dark fantasy novel illustration.\nThe rusty gear of a steampunk time machine about to be activated in a sci-fi adventure movie.\nThe toe of a ballet shoe worn by a principal dancer in a 1950s-era performance of Swan Lake.\nA fragment of a shattered stained-glass window depicting a scene from medieval mythology in a abandoned cathedral.\nThe chrome exhaust pipe of a vintage motorcycle racing down a desert highway in a 1960s road movie."
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "caption": "A slice of pizza being devoured by a giant, fire-breathing dragon in a medieval fantasy painting.\nThe intricate, swirling pattern on the shell of a rare, deep-sea snail discovered in an underwater trench.\nA close-up of a vintage, steam-powered robot's gearwork in a retro-futuristic science fiction illustration.\nThe delicate, lace-like structure of a rare, exotic flower blooming on a distant, alien world in a space exploration documentary.\nA fragment of a priceless, ancient mosaic depicting a mythological creature, unearthed in a archaeological dig in a long-lost city."
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "caption": "A chrome pipe on a vintage motorcycle's exhaust system\nThe edge of a stained glass window depicting a medieval saint\nA fragment of a futuristic spacecraft's hull with a strange alloy texture\nThe toe of a giant's boot in a surrealist painting by Salvador Dali\nA piece of a 19th-century map, showing the border of a long-lost colony"
+    },
+    {
+      "row": 2,
+      "col": 3,
+      "caption": "A slice of a juicy, ripe mango in a tropical fruit salad\nThe gleaming chrome wheel of a vintage motorcycle on display at a museum\nA snippet of iridescent butterfly wing on a entomologist's specimen board\nThe edge of a worn, leather-bound book on a cozy, old-fashioned library shelf\nA shard of broken, cobalt-blue glass from a surrealist art installation"
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "caption": "A close-up of a dragon's scale on a medieval-style fantasy creature's neck\nA fragment of a 1960s pop art painting featuring a bright red lip print\nA microscopic view of a cell membrane from a sci-fi alien species\nA detail from a Renaissance-era master's depiction of a saint's ornate cloak\nA pixelated section of a character's metallic armor in a cyberpunk video game"
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "caption": "A slice of a juicy, ripe mango in a tropical fruit salad\nThe metallic edge of a spaceship's control panel in a sci-fi movie\nThe edge of a vintage, hand-painted porcelain teacup from the Ming dynasty\nThe torn corner of a 1960s protest poster featuring a psychedelic font\nThe icy surface of a frozen lake in a snowy mountain landscape at dusk"
+    },
+    {
+      "row": 3,
+      "col": 2,
+      "caption": "A slice of pizza being devoured by a giant monster in a 1950s B-movie\nThe intricate golden filigree on a steampunk time traveler's pocket watch\nA fragment of a shattered stained glass window depicting a saint's face in a Gothic cathedral\nA pixelated icon on a retro video game character's inventory screen\nA delicate, hand-painted petal on a water lily in a Japanese ukiyo-e woodblock print"
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "caption": "A fragment of a giant spider's web glistening with dew, suspended between two skyscrapers in a futuristic city.\nThe intricate pattern on a 19th-century porcelain vase, part of a collection in a dimly lit, ornate museum.\nA section of a vibrant, abstract painting created by a reclusive artist, depicting a fantastical underwater world.\nThe surface of a distant planet, captured by a probe sent to explore the outer reaches of the galaxy.\nA detailed illustration from a medieval manuscript, showing a scene from a mythical battle between dragons and knights."
+    }
+  ]
+}

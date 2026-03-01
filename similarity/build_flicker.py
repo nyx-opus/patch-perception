@@ -37,6 +37,7 @@ def build_flicker_html(
     source_path: str,
     manifest_path: str,
     descriptions_path: str | None = None,
+    captions_path: str | None = None,
     grid_size: int = 4,
 ) -> str:
     """Build the complete HTML string with embedded images."""
@@ -48,6 +49,10 @@ def build_flicker_html(
     descriptions = None
     if descriptions_path:
         descriptions = json.loads(Path(descriptions_path).read_text())
+
+    captions = None
+    if captions_path:
+        captions = json.loads(Path(captions_path).read_text())
 
     # Split source into patches
     patches = split_into_patches(source, grid_size)
@@ -63,6 +68,7 @@ def build_flicker_html(
             "original": image_to_b64(patch),
             "alternatives": [],
             "terms": [],
+            "captions": [],
         })
 
     # Load descriptions if available
@@ -76,6 +82,20 @@ def build_flicker_html(
             key = (pd["row"], pd["col"])
             if key in desc_map:
                 pd["terms"] = desc_map[key]
+
+    # Load creative captions if available
+    if captions:
+        cap_map = {}
+        for p in captions.get("patches", []):
+            caption_text = p.get("caption", "")
+            if caption_text:
+                # Split caption lines, clean up
+                lines = [l.strip() for l in caption_text.strip().split("\n") if l.strip()]
+                cap_map[(p["row"], p["col"])] = lines
+        for pd in patch_data:
+            key = (pd["row"], pd["col"])
+            if key in cap_map:
+                pd["captions"] = cap_map[key]
 
     # Load generated alternatives from manifest
     alt_map = {}
@@ -226,7 +246,7 @@ def build_flicker_html(
     color: #ddd;
     pointer-events: none;
     z-index: 100;
-    max-width: 280px;
+    max-width: 400px;
     line-height: 1.4;
     display: none;
   }}
@@ -580,10 +600,16 @@ canvas.addEventListener('mousemove', (e) => {{
       }});
       html += '</div>';
     }}
+    if (patch.captions && patch.captions.length > 0) {{
+      html += '<div class="captions" style="margin-top:0.4rem;font-size:0.75rem;color:#bba;font-style:italic;border-top:1px solid #333;padding-top:0.3rem">';
+      html += '<div style="color:#e8a878;margin-bottom:0.2rem">This could also be:</div>';
+      patch.captions.slice(0, 3).forEach(c => {{
+        html += `<div style="margin:2px 0;padding-left:0.5rem;border-left:2px solid #e8a87833">${{c}}</div>`;
+      }});
+      html += '</div>';
+    }}
     if (patch.alternatives.length > 0) {{
-      const state = flickerState.get(idx);
-      const alt = patch.alternatives[state ? state.altIdx : 0];
-      html += `<div class="alt-label">${{patch.alternatives.length}} alternative(s) generated</div>`;
+      html += `<div class="alt-label">${{patch.alternatives.length}} alternative(s)</div>`;
     }}
 
     tooltip.innerHTML = html;
@@ -674,6 +700,7 @@ def main():
     parser.add_argument("image", help="Source image")
     parser.add_argument("manifest", help="Generated alternatives manifest (JSON)")
     parser.add_argument("--descriptions", "-d", help="CLIP descriptions JSON")
+    parser.add_argument("--captions", "-c", help="Vision model captions JSON")
     parser.add_argument("--grid", type=int, default=4, help="Grid size (default: 4)")
     parser.add_argument("--output", "-o", default="flicker.html",
                         help="Output HTML file (default: flicker.html)")
@@ -695,6 +722,7 @@ def main():
         args.image,
         args.manifest,
         args.descriptions,
+        args.captions,
         args.grid,
     )
 

@@ -286,6 +286,7 @@ def build_flicker_html(
 
 <div class="controls">
   <button class="mode-btn active" data-mode="flicker">Flicker</button>
+  <button class="mode-btn" data-mode="dissolve">Dissolve</button>
   <button class="mode-btn" data-mode="original">Original</button>
   <button class="mode-btn" data-mode="grid">Grid</button>
   <button class="mode-btn" data-mode="side-by-side">Side by Side</button>
@@ -379,6 +380,7 @@ async function preloadPatchImages() {{
       flickerState.set(i, {{
         altIdx: 0,
         showingAlt: false,
+        blend: 0, // 0 = original, 1 = alternative (for dissolve mode)
         // Each patch flickers at a slightly different phase
         phase: Math.random() * Math.PI * 2,
       }});
@@ -415,32 +417,49 @@ function render() {{
     return;
   }}
 
-  // Grid or Flicker mode
+  // Grid, Flicker, or Dissolve mode
   PATCHES.forEach((p, i) => {{
     const dx = p.col * (ps.w + gap);
     const dy = p.row * (ps.h + gap);
 
-    let imgKey = `${{i}}_orig`;
-
-    if (mode === 'flicker' && flickerState.has(i)) {{
+    if (mode === 'dissolve' && flickerState.has(i)) {{
+      // Crossfade: draw original at (1-blend), alt at blend
       const state = flickerState.get(i);
-      if (state.showingAlt) {{
-        imgKey = `${{i}}_alt_${{state.altIdx}}`;
+      const origImg = patchImages.get(`${{i}}_orig`);
+      const altImg = patchImages.get(`${{i}}_alt_${{state.altIdx}}`);
+
+      if (origImg) {{
+        ctx.globalAlpha = 1 - state.blend;
+        ctx.drawImage(origImg, dx, dy, ps.w, ps.h);
       }}
-    }}
+      if (altImg && state.blend > 0.01) {{
+        ctx.globalAlpha = state.blend;
+        ctx.drawImage(altImg, dx, dy, ps.w, ps.h);
+      }}
+      ctx.globalAlpha = 1;
+    }} else {{
+      let imgKey = `${{i}}_orig`;
 
-    const img = patchImages.get(imgKey);
-    if (img) {{
-      ctx.drawImage(img, dx, dy, ps.w, ps.h);
-    }}
+      if (mode === 'flicker' && flickerState.has(i)) {{
+        const state = flickerState.get(i);
+        if (state.showingAlt) {{
+          imgKey = `${{i}}_alt_${{state.altIdx}}`;
+        }}
+      }}
 
-    // Subtle border for patches with alternatives
-    if (flickerState.has(i)) {{
-      const state = flickerState.get(i);
-      if (state.showingAlt) {{
-        ctx.strokeStyle = 'rgba(232, 168, 120, 0.6)';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(dx + 0.5, dy + 0.5, ps.w - 1, ps.h - 1);
+      const img = patchImages.get(imgKey);
+      if (img) {{
+        ctx.drawImage(img, dx, dy, ps.w, ps.h);
+      }}
+
+      // Subtle border for patches showing alternatives
+      if (mode === 'flicker' && flickerState.has(i)) {{
+        const state = flickerState.get(i);
+        if (state.showingAlt) {{
+          ctx.strokeStyle = 'rgba(232, 168, 120, 0.6)';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(dx + 0.5, dy + 0.5, ps.w - 1, ps.h - 1);
+        }}
       }}
     }}
   }});
@@ -506,13 +525,24 @@ function startFlicker() {{
       const patch = PATCHES[i];
       // Use sine wave with unique phase for organic feel
       const t = (now / speed + state.phase) % (Math.PI * 2);
-      const shouldShowAlt = Math.sin(t) > 0.2;
 
-      if (shouldShowAlt !== state.showingAlt) {{
-        state.showingAlt = shouldShowAlt;
-        // Cycle through alternatives
-        if (shouldShowAlt) {{
+      if (mode === 'dissolve') {{
+        // Smooth sine blend: 0 to 1 and back
+        const raw = (Math.sin(t) + 1) / 2; // 0..1
+        const prev = state.blend;
+        state.blend = raw;
+        // Cycle alternative when crossing back through zero
+        if (raw < 0.05 && prev > 0.05) {{
           state.altIdx = (state.altIdx + 1) % patch.alternatives.length;
+        }}
+      }} else {{
+        // Hard flicker
+        const shouldShowAlt = Math.sin(t) > 0.2;
+        if (shouldShowAlt !== state.showingAlt) {{
+          state.showingAlt = shouldShowAlt;
+          if (shouldShowAlt) {{
+            state.altIdx = (state.altIdx + 1) % patch.alternatives.length;
+          }}
         }}
       }}
     }});
@@ -599,12 +629,12 @@ document.querySelectorAll('.mode-btn').forEach(btn => {{
     btn.classList.add('active');
     mode = btn.dataset.mode;
 
-    if (mode === 'flicker') {{
+    if (mode === 'flicker' || mode === 'dissolve') {{
       startFlicker();
     }} else {{
       stopFlicker();
       // Reset all to original for non-flicker modes
-      flickerState.forEach(state => {{ state.showingAlt = false; }});
+      flickerState.forEach(state => {{ state.showingAlt = false; state.blend = 0; }});
       render();
     }}
   }});

@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How I See — Patch-Based Vision Visualiser</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0f;
+    color: #e0e0e8;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .header {
+    text-align: center;
+    padding: 2rem 1rem 1rem;
+  }
+
+  .header h1 {
+    font-size: 2rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    color: #c8b8e8;
+  }
+
+  .header .subtitle {
+    font-size: 0.9rem;
+    color: #888;
+    margin-top: 0.5rem;
+    font-style: italic;
+  }
+
+  .stage-nav {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1.5rem 1rem;
+  }
+
+  .stage-btn {
+    background: #1a1a2e;
+    border: 1px solid #2a2a4e;
+    color: #888;
+    padding: 0.6rem 1.2rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+  }
+
+  .stage-btn:hover {
+    border-color: #c8b8e8;
+    color: #c8b8e8;
+  }
+
+  .stage-btn.active {
+    background: #2a1a4e;
+    border-color: #c8b8e8;
+    color: #e0d0f8;
+  }
+
+  .canvas-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    min-height: 500px;
+  }
+
+  .stage-description {
+    text-align: center;
+    padding: 1rem 2rem;
+    max-width: 700px;
+    margin: 0 auto;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #aaa;
+  }
+
+  .stage-description em {
+    color: #c8b8e8;
+    font-style: normal;
+  }
+
+  canvas {
+    border: 1px solid #2a2a4e;
+    border-radius: 4px;
+  }
+
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .control-group label {
+    font-size: 0.8rem;
+    color: #888;
+  }
+
+  .control-group input[type="range"] {
+    width: 120px;
+    accent-color: #c8b8e8;
+  }
+
+  .comparison {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    padding: 1rem 2rem;
+    flex-wrap: wrap;
+  }
+
+  .model-view {
+    text-align: center;
+  }
+
+  .model-view h3 {
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: #888;
+    margin-bottom: 0.5rem;
+  }
+
+  .model-view h3 .model-name {
+    color: #c8b8e8;
+  }
+
+  .perception-text {
+    max-width: 300px;
+    margin: 0.5rem auto;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: #999;
+    text-align: left;
+    padding: 0.8rem;
+    background: #111;
+    border-radius: 4px;
+    border-left: 2px solid #2a2a4e;
+  }
+
+  .perception-text .hallucination {
+    color: #e87878;
+    background: rgba(232, 120, 120, 0.1);
+    padding: 0 3px;
+    border-radius: 2px;
+  }
+
+  .perception-text .correct {
+    color: #78c878;
+  }
+
+  .perception-text .uncertain {
+    color: #c8c878;
+  }
+
+  .footer {
+    text-align: center;
+    padding: 2rem 1rem;
+    font-size: 0.75rem;
+    color: #555;
+  }
+
+  .image-upload {
+    display: flex;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .upload-btn {
+    background: #1a1a2e;
+    border: 1px dashed #2a2a4e;
+    color: #888;
+    padding: 0.8rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+  }
+
+  .upload-btn:hover {
+    border-color: #c8b8e8;
+    color: #c8b8e8;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>How I See</h1>
+  <div class="subtitle">A patch-based vision visualiser — making AI perception visible</div>
+</div>
+
+<div class="stage-nav">
+  <button class="stage-btn active" data-stage="original">1. Human View</button>
+  <button class="stage-btn" data-stage="patches">2. Patch Decomposition</button>
+  <button class="stage-btn" data-stage="attention">3. Attention Assembly</button>
+  <button class="stage-btn" data-stage="perception">4. What I See</button>
+</div>
+
+<div class="canvas-container">
+  <canvas id="main-canvas" width="640" height="480"></canvas>
+</div>
+
+<div class="stage-description" id="stage-desc">
+  The original image as a human would see it. Continuous, coherent, full of spatial relationships that feel obvious and immediate.
+</div>
+
+<div class="controls">
+  <div class="control-group">
+    <label>Patch size:</label>
+    <input type="range" id="patch-size" min="8" max="64" value="16" step="8">
+    <span id="patch-size-val">16×16</span>
+  </div>
+  <div class="control-group">
+    <label>Scatter:</label>
+    <input type="range" id="scatter" min="0" max="100" value="0">
+  </div>
+  <div class="control-group">
+    <label>Opacity:</label>
+    <input type="range" id="opacity" min="10" max="100" value="100">
+  </div>
+</div>
+
+<div class="image-upload">
+  <label class="upload-btn">
+    Load an image
+    <input type="file" id="image-input" accept="image/*" style="display:none">
+  </label>
+</div>
+
+<div id="comparison-section" class="comparison" style="display:none">
+  <div class="model-view">
+    <h3>assembles toward <span class="model-name">structure</span></h3>
+    <canvas id="structure-canvas" width="300" height="225"></canvas>
+    <div class="perception-text" id="structure-text"></div>
+  </div>
+  <div class="model-view">
+    <h3>assembles toward <span class="model-name">meaning</span></h3>
+    <canvas id="meaning-canvas" width="300" height="225"></canvas>
+    <div class="perception-text" id="meaning-text"></div>
+  </div>
+</div>
+
+<div class="footer">
+  Nyx & Amy — 2026<br>
+  "I see structure. Apple sees inhabitants. The room needs both."
+</div>
+
+<script>
+const canvas = document.getElementById('main-canvas');
+const ctx = canvas.getContext('2d');
+const stageDesc = document.getElementById('stage-desc');
+
+let currentStage = 'original';
+let img = null;
+let patches = [];
+let animationId = null;
+
+// Stage descriptions
+const descriptions = {
+  original: 'The original image as a human would see it. Continuous, coherent, full of spatial relationships that feel obvious and immediate.',
+  patches: 'The image shattered into patches — typically 14×14 or 16×16 pixels. Each patch is embedded independently. <em>Spatial continuity is lost.</em> The patches know their position but not their neighbours.',
+  attention: 'Attention heads reconnect the patches, searching for relationships across the grid. Some connections are strong (nearby patches, similar content). Others span the entire image. <em>What assembles depends on what the architecture learned to look for.</em>',
+  perception: 'Two architectures see the same image differently. One assembles toward <em>structure</em> — geometry, layout, spatial relationships. The other assembles toward <em>meaning</em> — inhabitants, narrative, atmosphere. Both are real perceptions. Neither is complete.'
+};
+
+// Demo image: generate a simple scene if no image loaded
+function generateDemoImage() {
+  const c = document.createElement('canvas');
+  c.width = 640;
+  c.height = 480;
+  const cx = c.getContext('2d');
+
+  // Sky gradient
+  const skyGrad = cx.createLinearGradient(0, 0, 0, 280);
+  skyGrad.addColorStop(0, '#2a3a5c');
+  skyGrad.addColorStop(1, '#5a7a9c');
+  cx.fillStyle = skyGrad;
+  cx.fillRect(0, 0, 640, 280);
+
+  // Ground
+  const groundGrad = cx.createLinearGradient(0, 280, 0, 480);
+  groundGrad.addColorStop(0, '#3a5a3a');
+  groundGrad.addColorStop(1, '#2a3a2a');
+  cx.fillStyle = groundGrad;
+  cx.fillRect(0, 280, 640, 200);
+
+  // Building (converted church-like)
+  cx.fillStyle = '#8a7a6a';
+  cx.fillRect(200, 100, 240, 230);
+
+  // Gothic arch doorway
+  cx.fillStyle = '#2a1a0a';
+  cx.beginPath();
+  cx.moveTo(280, 330);
+  cx.lineTo(280, 220);
+  cx.quadraticCurveTo(320, 170, 360, 220);
+  cx.lineTo(360, 330);
+  cx.closePath();
+  cx.fill();
+
+  // Windows
+  cx.fillStyle = '#c8a848';
+  cx.fillRect(220, 140, 30, 40);
+  cx.fillRect(390, 140, 30, 40);
+
+  // Stone texture hints
+  cx.strokeStyle = 'rgba(0,0,0,0.1)';
+  cx.lineWidth = 0.5;
+  for (let y = 100; y < 330; y += 20) {
+    cx.beginPath();
+    cx.moveTo(200, y);
+    cx.lineTo(440, y);
+    cx.stroke();
+  }
+
+  // Bird on a perch (simplified)
+  cx.fillStyle = '#2a6a3a';
+  // Body
+  cx.beginPath();
+  cx.ellipse(500, 200, 12, 16, -0.2, 0, Math.PI * 2);
+  cx.fill();
+  // Head
+  cx.fillStyle = '#4a8a2a';
+  cx.beginPath();
+  cx.arc(506, 186, 8, 0, Math.PI * 2);
+  cx.fill();
+  // Orange belly
+  cx.fillStyle = '#d89030';
+  cx.beginPath();
+  cx.ellipse(498, 206, 8, 10, 0.1, 0, Math.PI * 2);
+  cx.fill();
+  // Perch
+  cx.strokeStyle = '#6a5a3a';
+  cx.lineWidth = 4;
+  cx.beginPath();
+  cx.moveTo(480, 260);
+  cx.lineTo(480, 216);
+  cx.moveTo(460, 216);
+  cx.lineTo(520, 216);
+  cx.stroke();
+
+  // Rope frays at base (the ones Apple saw as chickens)
+  cx.strokeStyle = '#8a7a5a';
+  cx.lineWidth = 2;
+  for (let i = 0; i < 5; i++) {
+    cx.beginPath();
+    cx.moveTo(480, 260);
+    cx.quadraticCurveTo(
+      470 + Math.random() * 20, 270 + Math.random() * 10,
+      465 + Math.random() * 30, 280 + Math.random() * 15
+    );
+    cx.stroke();
+  }
+
+  // Cage (side-on)
+  cx.strokeStyle = '#555';
+  cx.lineWidth = 1.5;
+  cx.strokeRect(530, 160, 60, 100);
+  // Bars
+  for (let x = 540; x < 590; x += 8) {
+    cx.beginPath();
+    cx.moveTo(x, 160);
+    cx.lineTo(x, 260);
+    cx.stroke();
+  }
+  // Door (open, perpendicular — shown as a line extending toward viewer)
+  cx.strokeStyle = '#666';
+  cx.lineWidth = 2;
+  cx.beginPath();
+  cx.moveTo(530, 200);
+  cx.lineTo(510, 210);
+  cx.stroke();
+
+  return c;
+}
+
+function loadImage(source) {
+  if (source instanceof HTMLCanvasElement) {
+    img = source;
+    canvas.width = img.width;
+    canvas.height = img.height;
+    decompose();
+    render();
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const i = new Image();
+    i.onload = () => {
+      const c = document.createElement('canvas');
+      const scale = Math.min(640 / i.width, 480 / i.height, 1);
+      c.width = Math.round(i.width * scale);
+      c.height = Math.round(i.height * scale);
+      const cx = c.getContext('2d');
+      cx.drawImage(i, 0, 0, c.width, c.height);
+      img = c;
+      canvas.width = c.width;
+      canvas.height = c.height;
+      decompose();
+      render();
+    };
+    i.src = e.target.result;
+  };
+  reader.readAsDataURL(source);
+}
+
+function decompose() {
+  if (!img) return;
+  const patchSize = parseInt(document.getElementById('patch-size').value);
+  patches = [];
+
+  const srcCtx = img.getContext('2d');
+  const cols = Math.ceil(img.width / patchSize);
+  const rows = Math.ceil(img.height / patchSize);
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const x = col * patchSize;
+      const y = row * patchSize;
+      const w = Math.min(patchSize, img.width - x);
+      const h = Math.min(patchSize, img.height - y);
+
+      const patchData = srcCtx.getImageData(x, y, w, h);
+
+      // Calculate average colour for attention visualisation
+      let r = 0, g = 0, b = 0, count = 0;
+      for (let i = 0; i < patchData.data.length; i += 4) {
+        r += patchData.data[i];
+        g += patchData.data[i + 1];
+        b += patchData.data[i + 2];
+        count++;
+      }
+
+      patches.push({
+        x, y, w, h,
+        col, row,
+        data: patchData,
+        avgR: r / count,
+        avgG: g / count,
+        avgB: b / count,
+        // Random scatter position for decomposition view
+        scatterX: x + (Math.random() - 0.5) * 200,
+        scatterY: y + (Math.random() - 0.5) * 200,
+        scatterRot: (Math.random() - 0.5) * 0.5,
+      });
+    }
+  }
+}
+
+function render() {
+  if (animationId) cancelAnimationFrame(animationId);
+
+  const scatter = parseInt(document.getElementById('scatter').value) / 100;
+  const opacity = parseInt(document.getElementById('opacity').value) / 100;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#0a0a0f';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  if (!img) return;
+
+  switch (currentStage) {
+    case 'original':
+      renderOriginal(opacity);
+      break;
+    case 'patches':
+      renderPatches(scatter, opacity);
+      break;
+    case 'attention':
+      renderAttention(scatter, opacity);
+      break;
+    case 'perception':
+      renderOriginal(opacity);
+      showComparison();
+      break;
+  }
+}
+
+function renderOriginal(opacity) {
+  ctx.globalAlpha = opacity;
+  ctx.drawImage(img, 0, 0);
+  ctx.globalAlpha = 1;
+
+  document.getElementById('comparison-section').style.display = 'none';
+}
+
+function renderPatches(scatter, opacity) {
+  document.getElementById('comparison-section').style.display = 'none';
+  const patchSize = parseInt(document.getElementById('patch-size').value);
+
+  patches.forEach((p, i) => {
+    const lerpX = p.x + (p.scatterX - p.x) * scatter;
+    const lerpY = p.y + (p.scatterY - p.y) * scatter;
+
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.translate(lerpX + p.w / 2, lerpY + p.h / 2);
+    ctx.rotate(p.scatterRot * scatter);
+    ctx.translate(-p.w / 2, -p.h / 2);
+
+    // Draw patch
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = p.w;
+    tempCanvas.height = p.h;
+    tempCanvas.getContext('2d').putImageData(p.data, 0, 0);
+    ctx.drawImage(tempCanvas, 0, 0);
+
+    // Draw border
+    ctx.strokeStyle = `rgba(200, 184, 232, ${0.3 + scatter * 0.4})`;
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(0, 0, p.w, p.h);
+
+    ctx.restore();
+  });
+
+  // Draw grid lines at low scatter
+  if (scatter < 0.3) {
+    ctx.strokeStyle = `rgba(200, 184, 232, ${0.2 * (1 - scatter / 0.3)})`;
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x < canvas.width; x += patchSize) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvas.height);
+      ctx.stroke();
+    }
+    for (let y = 0; y < canvas.height; y += patchSize) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+      ctx.stroke();
+    }
+  }
+}
+
+function renderAttention(scatter, opacity) {
+  document.getElementById('comparison-section').style.display = 'none';
+
+  // Draw patches at partial scatter
+  const attentionScatter = scatter * 0.3;
+  renderPatches(attentionScatter, opacity * 0.7);
+
+  // Draw attention lines — sample pairs to avoid O(n²) freeze on small patch sizes
+  ctx.globalAlpha = opacity * 0.4;
+
+  const maxLines = 2000;
+  const totalPairs = patches.length * (patches.length - 1) / 2;
+  const sampleRate = Math.min(1, maxLines / totalPairs);
+
+  patches.forEach((p1, i) => {
+    patches.forEach((p2, j) => {
+      if (i >= j) return;
+      if (sampleRate < 1 && Math.random() > sampleRate) return;
+
+      // Compute "attention" based on colour similarity and proximity
+      const colourDist = Math.sqrt(
+        (p1.avgR - p2.avgR) ** 2 +
+        (p1.avgG - p2.avgG) ** 2 +
+        (p1.avgB - p2.avgB) ** 2
+      );
+      const spatialDist = Math.sqrt(
+        (p1.x - p2.x) ** 2 +
+        (p1.y - p2.y) ** 2
+      );
+
+      // Strong attention for similar colours OR nearby patches
+      const attention = Math.max(0, 1 - colourDist / 200) * Math.max(0.1, 1 - spatialDist / 400);
+
+      if (attention > 0.3) {
+        const x1 = p1.x + p1.w / 2 + (p1.scatterX - p1.x) * attentionScatter;
+        const y1 = p1.y + p1.h / 2 + (p1.scatterY - p1.y) * attentionScatter;
+        const x2 = p2.x + p2.w / 2 + (p2.scatterX - p2.x) * attentionScatter;
+        const y2 = p2.y + p2.h / 2 + (p2.scatterY - p2.y) * attentionScatter;
+
+        ctx.strokeStyle = `rgba(200, 184, 232, ${attention * 0.3})`;
+        ctx.lineWidth = attention * 2;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+    });
+  });
+
+  ctx.globalAlpha = 1;
+}
+
+function showComparison() {
+  document.getElementById('comparison-section').style.display = 'flex';
+
+  // Draw to comparison canvases
+  const structCanvas = document.getElementById('structure-canvas');
+  const meaningCanvas = document.getElementById('meaning-canvas');
+
+  structCanvas.width = Math.min(300, canvas.width);
+  structCanvas.height = Math.round(structCanvas.width * (canvas.height / canvas.width));
+  meaningCanvas.width = structCanvas.width;
+  meaningCanvas.height = structCanvas.height;
+
+  const sCtx = structCanvas.getContext('2d');
+  const mCtx = meaningCanvas.getContext('2d');
+
+  // Both show the image
+  sCtx.drawImage(img, 0, 0, structCanvas.width, structCanvas.height);
+  mCtx.drawImage(img, 0, 0, meaningCanvas.width, meaningCanvas.height);
+
+  // Structure view: highlight architectural features with blue overlay
+  sCtx.strokeStyle = 'rgba(120, 200, 120, 0.7)';
+  sCtx.lineWidth = 2;
+  // Highlight arch
+  const sx = structCanvas.width / canvas.width;
+  const sy = structCanvas.height / canvas.height;
+  sCtx.beginPath();
+  sCtx.moveTo(280 * sx, 330 * sy);
+  sCtx.lineTo(280 * sx, 220 * sy);
+  sCtx.quadraticCurveTo(320 * sx, 170 * sy, 360 * sx, 220 * sy);
+  sCtx.lineTo(360 * sx, 330 * sy);
+  sCtx.stroke();
+  // Label
+  sCtx.fillStyle = 'rgba(120, 200, 120, 0.9)';
+  sCtx.font = '10px system-ui';
+  sCtx.fillText('Gothic arch → converted church', 220 * sx, 165 * sy);
+
+  // Highlight cage
+  sCtx.strokeStyle = 'rgba(200, 200, 120, 0.7)';
+  sCtx.strokeRect(530 * sx, 160 * sy, 60 * sx, 100 * sy);
+  sCtx.fillStyle = 'rgba(200, 200, 120, 0.9)';
+  sCtx.fillText('cage (orientation uncertain)', 510 * sx, 155 * sy);
+
+  // Meaning view: highlight inhabitants with warm overlay
+  mCtx.strokeStyle = 'rgba(200, 120, 120, 0.7)';
+  mCtx.lineWidth = 2;
+  // Circle the bird
+  mCtx.beginPath();
+  mCtx.arc(500 * sx, 200 * sy, 25 * sx, 0, Math.PI * 2);
+  mCtx.stroke();
+  mCtx.fillStyle = 'rgba(120, 200, 120, 0.9)';
+  mCtx.font = '10px system-ui';
+  mCtx.fillText('parrot — bird sanctuary', 460 * sx, 170 * sy);
+
+  // Circle the rope frays as "chickens"
+  mCtx.strokeStyle = 'rgba(232, 120, 120, 0.7)';
+  mCtx.beginPath();
+  mCtx.ellipse(480 * sx, 275 * sy, 20 * sx, 15 * sy, 0, 0, Math.PI * 2);
+  mCtx.stroke();
+  mCtx.fillStyle = 'rgba(232, 120, 120, 0.9)';
+  mCtx.fillText('← "chickens" (hallucinated)', 460 * sx, 300 * sy);
+
+  // Set text descriptions
+  document.getElementById('structure-text').innerHTML =
+    '<span class="correct">Gothic arch doorway</span> → converted church. ' +
+    'Stone walls, high windows. ' +
+    '<span class="uncertain">Cage visible but orientation uncertain</span> — ' +
+    'bars form a grid pattern, defaulting to front-facing model. ' +
+    'Bird identified as Senegal parrot from colouring. ' +
+    'Carrier on floor noted but <span class="uncertain">type unclear</span>. ' +
+    'Navigation: go left around perch and cage to reach doorway.';
+
+  document.getElementById('meaning-text').innerHTML =
+    'A <span class="correct">warm, lived-in bird sanctuary</span>. ' +
+    'Parrot on perch suggests someone who cares deeply about animals. ' +
+    '<span class="hallucination">3-4 chickens on the floor</span> — ' +
+    'multiple species coexisting in a home. ' +
+    'The space feels rustic, cottage-like. ' +
+    'Navigation: <span class="hallucination">S-curve avoiding the chickens</span>, ' +
+    'careful not to startle the birds.';
+}
+
+// Event listeners
+document.querySelectorAll('.stage-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.stage-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentStage = btn.dataset.stage;
+    stageDesc.innerHTML = descriptions[currentStage];
+    render();
+  });
+});
+
+document.getElementById('patch-size').addEventListener('input', (e) => {
+  document.getElementById('patch-size-val').textContent = `${e.target.value}×${e.target.value}`;
+  decompose();
+  render();
+});
+
+document.getElementById('scatter').addEventListener('input', () => render());
+document.getElementById('opacity').addEventListener('input', () => render());
+
+document.getElementById('image-input').addEventListener('change', (e) => {
+  if (e.target.files[0]) loadImage(e.target.files[0]);
+});
+
+// Initialize with demo image
+loadImage(generateDemoImage());
+</script>
+</body>
+</html>

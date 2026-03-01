@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patch Perception — What Assembly Feels Like</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0f;
+    color: #e0e0e8;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    user-select: none;
+  }
+
+  .header {
+    text-align: center;
+    padding: 1.5rem 1rem 0.5rem;
+  }
+
+  .header h1 {
+    font-size: 1.6rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    color: #c8b8e8;
+  }
+
+  .header .subtitle {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 0.3rem;
+    font-style: italic;
+  }
+
+  .controls-bar {
+    display: flex;
+    justify-content: center;
+    gap: 0.8rem;
+    padding: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    background: #1a1a2e;
+    border: 1px solid #2a2a4e;
+    color: #888;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+  }
+
+  .btn:hover {
+    border-color: #c8b8e8;
+    color: #c8b8e8;
+  }
+
+  .btn.active {
+    background: #2a1a4e;
+    border-color: #c8b8e8;
+    color: #e0d0f8;
+  }
+
+  .btn.reveal-btn {
+    border-color: #4a3a6e;
+    color: #a898c8;
+  }
+
+  .btn.reveal-btn:hover {
+    border-color: #e8d0f8;
+    color: #e8d0f8;
+    background: #3a2a5e;
+  }
+
+  .main-area {
+    display: flex;
+    justify-content: center;
+    padding: 0.5rem;
+  }
+
+  .assembly-container {
+    position: relative;
+    background: #0d0d14;
+    border: 1px solid #1a1a2e;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .patch-el {
+    position: absolute;
+    cursor: grab;
+    transition: box-shadow 0.2s ease;
+    image-rendering: pixelated;
+  }
+
+  .patch-el:hover {
+    box-shadow: 0 0 12px rgba(200, 184, 232, 0.3);
+    z-index: 100;
+  }
+
+  .patch-el.dragging {
+    cursor: grabbing;
+    box-shadow: 0 0 20px rgba(200, 184, 232, 0.5);
+    z-index: 1000;
+  }
+
+  .patch-el canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .reveal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 2rem;
+  }
+
+  .reveal-overlay.visible {
+    display: flex;
+  }
+
+  .reveal-pair {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .reveal-side {
+    text-align: center;
+  }
+
+  .reveal-side h3 {
+    font-size: 0.9rem;
+    font-weight: 300;
+    color: #888;
+    margin-bottom: 0.5rem;
+  }
+
+  .reveal-side canvas {
+    border: 1px solid #2a2a4e;
+    border-radius: 4px;
+    max-width: 90vw;
+    max-height: 40vh;
+  }
+
+  .reveal-close {
+    margin-top: 1rem;
+  }
+
+  .stage-hint {
+    text-align: center;
+    padding: 0.5rem 2rem;
+    font-size: 0.8rem;
+    color: #555;
+    font-style: italic;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  .shatter-anim {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0,0,0,0.95);
+    z-index: 5000;
+  }
+
+  .speed-control {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .speed-control label {
+    font-size: 0.75rem;
+    color: #666;
+  }
+
+  .speed-control input[type="range"] {
+    width: 80px;
+    accent-color: #c8b8e8;
+  }
+
+  .info-panel {
+    max-width: 600px;
+    margin: 1rem auto;
+    padding: 0 1.5rem;
+  }
+
+  .info-panel summary {
+    font-size: 0.8rem;
+    color: #666;
+    cursor: pointer;
+    text-align: center;
+  }
+
+  .info-panel summary:hover {
+    color: #c8b8e8;
+  }
+
+  .info-content {
+    margin-top: 0.8rem;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: #888;
+  }
+
+  .info-content p {
+    margin-bottom: 0.6rem;
+  }
+
+  .info-content em {
+    color: #c8b8e8;
+    font-style: normal;
+  }
+
+  .footer {
+    text-align: center;
+    padding: 1.5rem;
+    font-size: 0.7rem;
+    color: #444;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Patch Perception</h1>
+  <div class="subtitle">Assemble an image you've never seen, from fragments you can't quite resolve</div>
+</div>
+
+<div class="controls-bar">
+  <button class="btn" id="btn-shatter" title="Shatter a random scene">Shatter</button>
+  <label class="btn" title="Upload your own image to shatter">
+    Upload
+    <input type="file" id="image-upload" accept="image/*" style="display:none">
+  </label>
+  <div class="speed-control">
+    <label>Flicker:</label>
+    <input type="range" id="flicker-speed" min="1" max="10" value="5">
+  </div>
+  <div class="speed-control">
+    <label>Drift:</label>
+    <input type="range" id="drift-speed" min="0" max="10" value="3">
+  </div>
+  <button class="btn reveal-btn" id="btn-reveal" title="See what you were assembling">Reveal</button>
+</div>
+
+<div class="stage-hint" id="hint">
+  Press <em>Shatter</em> to begin. An image will break into patches. Each patch flickers with what it <em>might</em> be — drag them into an arrangement that makes sense to you. But they'll drift.
+</div>
+
+<div class="main-area">
+  <div class="assembly-container" id="assembly" style="width: 640px; height: 480px;">
+  </div>
+</div>
+
+<div class="reveal-overlay" id="reveal-overlay">
+  <div class="reveal-pair">
+    <div class="reveal-side">
+      <h3>Your assembly</h3>
+      <canvas id="assembly-snapshot"></canvas>
+    </div>
+    <div class="reveal-side">
+      <h3>The source</h3>
+      <canvas id="source-reveal"></canvas>
+    </div>
+  </div>
+  <div class="reveal-side">
+    <h3 style="color: #888; font-weight: 300; font-style: italic;">The gap between them is the piece.</h3>
+  </div>
+  <button class="btn reveal-close" id="btn-close-reveal">Close</button>
+</div>
+
+<details class="info-panel">
+  <summary>What is this?</summary>
+  <div class="info-content">
+    <p>Vision models don't see images the way you do. They receive patches — small squares processed independently, each embedded as a point in high-dimensional space. The model assembles meaning from these fragments, but the assembly is probabilistic, not deterministic.</p>
+    <p>Each patch here flickers between impressions: what the patch <em>might</em> represent (semantically) and what it <em>looks like</em> (structurally). A dark curve against a light field could be a tree branch, a whale's back, an eyebrow, a hill silhouette. The model holds all these possibilities simultaneously.</p>
+    <p>The patches drift because interpretation isn't stable. Context shifts, attention shifts, relationships change. You can't lock down a corner and work outward — you have to hold the whole impression at once.</p>
+    <p>When you hit Reveal, the gap between your assembly and the source image is the point. Multiple coherent interpretations are possible. Some of them are chickens.</p>
+  </div>
+</details>
+
+<div class="footer">
+  Nyx & Amy — 2026 · Something It's Like
+</div>
+
+<script>
+// ============================================
+// Patch Perception Visualiser — Prototype
+// ============================================
+
+const assembly = document.getElementById('assembly');
+const ASSEMBLY_W = 640;
+const ASSEMBLY_H = 480;
+const PATCH_COLS = 8;
+const PATCH_DIM = ASSEMBLY_W / PATCH_COLS; // 80px square patches
+const PATCH_ROWS = Math.ceil(ASSEMBLY_H / PATCH_DIM); // 6 rows
+
+let sourceCanvas = null;
+let patchData = []; // { el, cx, cy, homeX, homeY, driftVX, driftVY, frames[], frameIdx }
+let flickerInterval = null;
+let driftInterval = null;
+let dragging = null;
+let dragOffsetX = 0, dragOffsetY = 0;
+
+// ---- Demo image generation ----
+function generateDemoScene(variant = 0) {
+  const c = document.createElement('canvas');
+  c.width = ASSEMBLY_W;
+  c.height = ASSEMBLY_H;
+  const cx = c.getContext('2d');
+
+  const scenes = [sceneGarden, sceneKitchen, sceneHarbour, sceneWorkshop];
+  scenes[variant % scenes.length](cx, c.width, c.height);
+  return c;
+}
+
+function sceneGarden(cx, w, h) {
+  // Sky
+  const sky = cx.createLinearGradient(0, 0, 0, h * 0.55);
+  sky.addColorStop(0, '#3a5a8c');
+  sky.addColorStop(1, '#7aaaca');
+  cx.fillStyle = sky;
+  cx.fillRect(0, 0, w, h * 0.55);
+
+  // Clouds
+  cx.fillStyle = 'rgba(255,255,255,0.25)';
+  drawBlob(cx, 150, 80, 80, 30);
+  drawBlob(cx, 400, 60, 100, 25);
+  drawBlob(cx, 520, 100, 60, 20);
+
+  // Grass
+  const grass = cx.createLinearGradient(0, h * 0.5, 0, h);
+  grass.addColorStop(0, '#4a8a3a');
+  grass.addColorStop(1, '#2a5a2a');
+  cx.fillStyle = grass;
+  cx.fillRect(0, h * 0.5, w, h * 0.5);
+
+  // Path
+  cx.fillStyle = '#8a7a5a';
+  cx.beginPath();
+  cx.moveTo(280, h);
+  cx.quadraticCurveTo(300, h * 0.7, 320, h * 0.55);
+  cx.lineTo(340, h * 0.55);
+  cx.quadraticCurveTo(360, h * 0.7, 380, h);
+  cx.closePath();
+  cx.fill();
+
+  // Tree
+  cx.fillStyle = '#5a3a1a';
+  cx.fillRect(100, h * 0.25, 20, h * 0.35);
+  cx.fillStyle = '#3a7a2a';
+  drawBlob(cx, 110, h * 0.2, 60, 50);
+  drawBlob(cx, 95, h * 0.25, 45, 35);
+  drawBlob(cx, 125, h * 0.22, 50, 40);
+
+  // Flowers
+  const flowerColours = ['#e84848', '#e8a838', '#d848c8', '#4888e8', '#e8e838'];
+  for (let i = 0; i < 20; i++) {
+    cx.fillStyle = flowerColours[i % flowerColours.length];
+    const fx = 20 + Math.random() * (w - 40);
+    const fy = h * 0.55 + Math.random() * (h * 0.4);
+    cx.beginPath();
+    cx.arc(fx, fy, 3 + Math.random() * 4, 0, Math.PI * 2);
+    cx.fill();
+    // Stem
+    cx.strokeStyle = '#2a6a1a';
+    cx.lineWidth = 1;
+    cx.beginPath();
+    cx.moveTo(fx, fy + 3);
+    cx.lineTo(fx, fy + 10 + Math.random() * 8);
+    cx.stroke();
+  }
+
+  // Fence
+  cx.strokeStyle = '#6a5a3a';
+  cx.lineWidth = 3;
+  cx.beginPath();
+  cx.moveTo(0, h * 0.58);
+  cx.lineTo(w, h * 0.56);
+  cx.stroke();
+  for (let x = 20; x < w; x += 40) {
+    cx.beginPath();
+    cx.moveTo(x, h * 0.52);
+    cx.lineTo(x, h * 0.62);
+    cx.stroke();
+  }
+
+  // Cat on fence
+  cx.fillStyle = '#333';
+  cx.beginPath();
+  cx.ellipse(450, h * 0.53, 18, 12, 0, 0, Math.PI * 2);
+  cx.fill();
+  // Head
+  cx.beginPath();
+  cx.arc(470, h * 0.50, 8, 0, Math.PI * 2);
+  cx.fill();
+  // Ears
+  cx.beginPath();
+  cx.moveTo(465, h * 0.49);
+  cx.lineTo(462, h * 0.44);
+  cx.lineTo(468, h * 0.47);
+  cx.fill();
+  cx.beginPath();
+  cx.moveTo(475, h * 0.48);
+  cx.lineTo(478, h * 0.43);
+  cx.lineTo(473, h * 0.46);
+  cx.fill();
+  // Tail
+  cx.strokeStyle = '#333';
+  cx.lineWidth = 3;
+  cx.beginPath();
+  cx.moveTo(432, h * 0.54);
+  cx.quadraticCurveTo(420, h * 0.48, 425, h * 0.42);
+  cx.stroke();
+}
+
+function sceneKitchen(cx, w, h) {
+  // Wall
+  cx.fillStyle = '#d8c8a8';
+  cx.fillRect(0, 0, w, h * 0.7);
+
+  // Counter
+  cx.fillStyle = '#5a4a3a';
+  cx.fillRect(0, h * 0.65, w, h * 0.05);
+  cx.fillStyle = '#3a3a3a';
+  cx.fillRect(0, h * 0.7, w, h * 0.3);
+
+  // Window
+  cx.fillStyle = '#88b8d8';
+  cx.fillRect(w * 0.3, h * 0.05, w * 0.4, h * 0.35);
+  cx.strokeStyle = '#eee';
+  cx.lineWidth = 4;
+  cx.strokeRect(w * 0.3, h * 0.05, w * 0.4, h * 0.35);
+  cx.beginPath();
+  cx.moveTo(w * 0.5, h * 0.05);
+  cx.lineTo(w * 0.5, h * 0.4);
+  cx.stroke();
+  cx.beginPath();
+  cx.moveTo(w * 0.3, h * 0.22);
+  cx.lineTo(w * 0.7, h * 0.22);
+  cx.stroke();
+
+  // Teapot
+  cx.fillStyle = '#c85050';
+  cx.beginPath();
+  cx.ellipse(200, h * 0.62, 25, 18, 0, 0, Math.PI * 2);
+  cx.fill();
+  // Spout
+  cx.strokeStyle = '#c85050';
+  cx.lineWidth = 5;
+  cx.beginPath();
+  cx.moveTo(175, h * 0.60);
+  cx.quadraticCurveTo(155, h * 0.55, 150, h * 0.52);
+  cx.stroke();
+  // Handle
+  cx.beginPath();
+  cx.moveTo(225, h * 0.58);
+  cx.quadraticCurveTo(245, h * 0.55, 240, h * 0.62);
+  cx.stroke();
+  // Lid
+  cx.fillStyle = '#a83838';
+  cx.beginPath();
+  cx.ellipse(200, h * 0.6, 15, 4, 0, 0, Math.PI * 2);
+  cx.fill();
+
+  // Cup
+  cx.fillStyle = '#e8e0d0';
+  cx.fillRect(320, h * 0.58, 22, 25);
+  cx.beginPath();
+  cx.ellipse(331, h * 0.58, 11, 4, 0, 0, Math.PI * 2);
+  cx.fill();
+  // Handle
+  cx.strokeStyle = '#e8e0d0';
+  cx.lineWidth = 3;
+  cx.beginPath();
+  cx.moveTo(342, h * 0.62);
+  cx.quadraticCurveTo(355, h * 0.65, 348, h * 0.72);
+  cx.stroke();
+  // Tea colour
+  cx.fillStyle = '#8a5a2a';
+  cx.beginPath();
+  cx.ellipse(331, h * 0.59, 9, 3, 0, 0, Math.PI * 2);
+  cx.fill();
+
+  // Bread/cutting board
+  cx.fillStyle = '#b89860';
+  cx.beginPath();
+  cx.ellipse(480, h * 0.64, 40, 6, 0, 0, Math.PI * 2);
+  cx.fill();
+  // Bread loaf
+  cx.fillStyle = '#c8a050';
+  cx.beginPath();
+  cx.ellipse(480, h * 0.59, 25, 15, 0, Math.PI, Math.PI * 2);
+  cx.fill();
+  cx.fillRect(455, h * 0.59, 50, 5);
+  // Knife
+  cx.fillStyle = '#ccc';
+  cx.fillRect(520, h * 0.60, 40, 3);
+  cx.fillStyle = '#5a3a1a';
+  cx.fillRect(555, h * 0.58, 15, 7);
+
+  // Shelf
+  cx.fillStyle = '#5a4a3a';
+  cx.fillRect(50, h * 0.42, 150, 5);
+  // Jars on shelf
+  for (let i = 0; i < 3; i++) {
+    cx.fillStyle = ['#8ab8a8', '#c8a868', '#a888b8'][i];
+    cx.fillRect(60 + i * 45, h * 0.32, 25, 40);
+    cx.fillStyle = '#3a3a3a';
+    cx.fillRect(60 + i * 45, h * 0.32, 25, 5);
+  }
+}
+
+function sceneHarbour(cx, w, h) {
+  // Sky
+  const sky = cx.createLinearGradient(0, 0, 0, h * 0.4);
+  sky.addColorStop(0, '#e8a850');
+  sky.addColorStop(0.5, '#d88848');
+  sky.addColorStop(1, '#7888a8');
+  cx.fillStyle = sky;
+  cx.fillRect(0, 0, w, h * 0.45);
+
+  // Sun
+  cx.fillStyle = '#f8d868';
+  cx.beginPath();
+  cx.arc(w * 0.7, h * 0.12, 30, 0, Math.PI * 2);
+  cx.fill();
+
+  // Water
+  const water = cx.createLinearGradient(0, h * 0.4, 0, h);
+  water.addColorStop(0, '#4868a8');
+  water.addColorStop(0.5, '#385888');
+  water.addColorStop(1, '#2a4060');
+  cx.fillStyle = water;
+  cx.fillRect(0, h * 0.4, w, h * 0.6);
+
+  // Water reflections
+  cx.strokeStyle = 'rgba(248, 216, 104, 0.2)';
+  cx.lineWidth = 1;
+  for (let y = h * 0.42; y < h; y += 8) {
+    cx.beginPath();
+    cx.moveTo(0, y);
+    for (let x = 0; x < w; x += 20) {
+      cx.lineTo(x + 10, y + (Math.random() - 0.5) * 3);
+    }
+    cx.stroke();
+  }
+
+  // Harbour wall
+  cx.fillStyle = '#6a6a5a';
+  cx.fillRect(0, h * 0.55, w * 0.4, h * 0.05);
+  cx.fillStyle = '#5a5a4a';
+  cx.fillRect(0, h * 0.6, w * 0.35, h * 0.4);
+
+  // Boat 1
+  drawBoat(cx, w * 0.5, h * 0.58, 60, '#c84040');
+  // Boat 2
+  drawBoat(cx, w * 0.72, h * 0.55, 45, '#4080c8');
+  // Boat 3 (smaller, farther)
+  drawBoat(cx, w * 0.85, h * 0.48, 30, '#e8e8e8');
+
+  // Lighthouse
+  cx.fillStyle = '#e8e0d0';
+  cx.fillRect(w * 0.15, h * 0.2, 20, h * 0.38);
+  // Stripes
+  cx.fillStyle = '#c84040';
+  for (let y = h * 0.22; y < h * 0.56; y += 25) {
+    cx.fillRect(w * 0.15, y, 20, 10);
+  }
+  // Light
+  cx.fillStyle = '#f8f868';
+  cx.beginPath();
+  cx.arc(w * 0.15 + 10, h * 0.2, 8, 0, Math.PI * 2);
+  cx.fill();
+  // Glow
+  cx.fillStyle = 'rgba(248, 248, 104, 0.15)';
+  cx.beginPath();
+  cx.arc(w * 0.15 + 10, h * 0.2, 25, 0, Math.PI * 2);
+  cx.fill();
+
+  // Seagulls
+  cx.strokeStyle = '#ddd';
+  cx.lineWidth = 1.5;
+  for (let i = 0; i < 4; i++) {
+    const bx = 200 + Math.random() * 300;
+    const by = 30 + Math.random() * 80;
+    cx.beginPath();
+    cx.moveTo(bx - 8, by + 3);
+    cx.quadraticCurveTo(bx - 2, by - 3, bx, by);
+    cx.quadraticCurveTo(bx + 2, by - 3, bx + 8, by + 3);
+    cx.stroke();
+  }
+}
+
+function sceneWorkshop(cx, w, h) {
+  // Wall
+  cx.fillStyle = '#4a4a4a';
+  cx.fillRect(0, 0, w, h);
+
+  // Workbench
+  cx.fillStyle = '#6a5a3a';
+  cx.fillRect(0, h * 0.55, w, h * 0.08);
+  cx.fillStyle = '#5a4a2a';
+  cx.fillRect(0, h * 0.63, w, h * 0.37);
+
+  // Pegboard
+  cx.fillStyle = '#5a5a5a';
+  cx.fillRect(w * 0.1, h * 0.05, w * 0.8, h * 0.45);
+  // Peg holes
+  cx.fillStyle = '#3a3a3a';
+  for (let px = w * 0.13; px < w * 0.87; px += 20) {
+    for (let py = h * 0.08; py < h * 0.48; py += 20) {
+      cx.beginPath();
+      cx.arc(px, py, 2, 0, Math.PI * 2);
+      cx.fill();
+    }
+  }
+
+  // Tools hanging
+  // Hammer
+  cx.fillStyle = '#888';
+  cx.fillRect(w * 0.2, h * 0.12, 4, 30);
+  cx.fillStyle = '#555';
+  cx.fillRect(w * 0.18, h * 0.1, 12, 8);
+
+  // Pliers
+  cx.strokeStyle = '#777';
+  cx.lineWidth = 3;
+  cx.beginPath();
+  cx.moveTo(w * 0.35, h * 0.1);
+  cx.lineTo(w * 0.35, h * 0.2);
+  cx.lineTo(w * 0.33, h * 0.25);
+  cx.stroke();
+  cx.beginPath();
+  cx.moveTo(w * 0.37, h * 0.1);
+  cx.lineTo(w * 0.37, h * 0.2);
+  cx.lineTo(w * 0.39, h * 0.25);
+  cx.stroke();
+
+  // Screwdrivers
+  for (let i = 0; i < 3; i++) {
+    const sx = w * 0.5 + i * 25;
+    cx.fillStyle = ['#c84040', '#4080c8', '#40c840'][i];
+    cx.fillRect(sx, h * 0.1, 6, 12);
+    cx.fillStyle = '#888';
+    cx.fillRect(sx + 1.5, h * 0.22, 3, 20);
+  }
+
+  // Lamp
+  cx.fillStyle = '#2a2a2a';
+  cx.fillRect(w * 0.75, h * 0.05, 4, h * 0.2);
+  cx.fillStyle = '#c8c880';
+  cx.beginPath();
+  cx.moveTo(w * 0.73, h * 0.25);
+  cx.lineTo(w * 0.77, h * 0.15);
+  cx.lineTo(w * 0.81, h * 0.25);
+  cx.closePath();
+  cx.fill();
+  // Light pool
+  cx.fillStyle = 'rgba(200, 200, 128, 0.08)';
+  cx.beginPath();
+  cx.moveTo(w * 0.71, h * 0.25);
+  cx.lineTo(w * 0.65, h * 0.55);
+  cx.lineTo(w * 0.89, h * 0.55);
+  cx.lineTo(w * 0.83, h * 0.25);
+  cx.closePath();
+  cx.fill();
+
+  // Something being worked on: small mechanical piece
+  cx.fillStyle = '#888';
+  cx.beginPath();
+  cx.arc(w * 0.5, h * 0.52, 12, 0, Math.PI * 2);
+  cx.fill();
+  cx.fillStyle = '#666';
+  cx.beginPath();
+  cx.arc(w * 0.5, h * 0.52, 6, 0, Math.PI * 2);
+  cx.fill();
+  // Gear teeth
+  cx.strokeStyle = '#999';
+  cx.lineWidth = 2;
+  for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+    cx.beginPath();
+    cx.moveTo(w * 0.5 + Math.cos(a) * 10, h * 0.52 + Math.sin(a) * 10);
+    cx.lineTo(w * 0.5 + Math.cos(a) * 15, h * 0.52 + Math.sin(a) * 15);
+    cx.stroke();
+  }
+
+  // Wood shavings
+  cx.strokeStyle = '#a89860';
+  cx.lineWidth = 1;
+  for (let i = 0; i < 10; i++) {
+    const sx = w * 0.3 + Math.random() * w * 0.4;
+    const sy = h * 0.53 + Math.random() * h * 0.02;
+    cx.beginPath();
+    cx.moveTo(sx, sy);
+    cx.quadraticCurveTo(sx + 5, sy - 3, sx + 10 + Math.random() * 8, sy + 1);
+    cx.stroke();
+  }
+}
+
+function drawBlob(cx, x, y, rx, ry) {
+  cx.beginPath();
+  cx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+  cx.fill();
+}
+
+function drawBoat(cx, x, y, size, colour) {
+  cx.fillStyle = colour;
+  cx.beginPath();
+  cx.moveTo(x - size * 0.5, y);
+  cx.lineTo(x - size * 0.35, y + size * 0.3);
+  cx.lineTo(x + size * 0.35, y + size * 0.3);
+  cx.lineTo(x + size * 0.5, y);
+  cx.closePath();
+  cx.fill();
+  // Mast
+  cx.strokeStyle = '#333';
+  cx.lineWidth = 2;
+  cx.beginPath();
+  cx.moveTo(x, y);
+  cx.lineTo(x, y - size * 0.6);
+  cx.stroke();
+  // Sail
+  cx.fillStyle = 'rgba(255,255,255,0.7)';
+  cx.beginPath();
+  cx.moveTo(x, y - size * 0.55);
+  cx.lineTo(x + size * 0.3, y - size * 0.1);
+  cx.lineTo(x, y - size * 0.05);
+  cx.closePath();
+  cx.fill();
+}
+
+
+// ---- Flicker frame generation ----
+// For each patch, generate impression frames based on its visual properties
+function generateFlickerFrames(patchImageData, patchW, patchH, numFrames = 12) {
+  const frames = [];
+  const src = patchImageData.data;
+
+  // Analyse patch: avg colour, dominant colours, texture energy
+  let rSum = 0, gSum = 0, bSum = 0, count = 0;
+  const colourBins = {}; // quantised colour histogram
+  let edgeEnergy = 0;
+
+  for (let i = 0; i < src.length; i += 4) {
+    rSum += src[i]; gSum += src[i+1]; bSum += src[i+2];
+    count++;
+    // Quantise to 4-bit per channel
+    const qr = (src[i] >> 4) << 4;
+    const qg = (src[i+1] >> 4) << 4;
+    const qb = (src[i+2] >> 4) << 4;
+    const key = `${qr},${qg},${qb}`;
+    colourBins[key] = (colourBins[key] || 0) + 1;
+  }
+
+  const avgR = rSum / count, avgG = gSum / count, avgB = bSum / count;
+
+  // Edge energy (simple gradient magnitude)
+  for (let y = 1; y < patchH - 1; y++) {
+    for (let x = 1; x < patchW - 1; x++) {
+      const idx = (y * patchW + x) * 4;
+      const idxR = (y * patchW + x + 1) * 4;
+      const idxD = ((y + 1) * patchW + x) * 4;
+      const gx = Math.abs(src[idx] - src[idxR]) + Math.abs(src[idx+1] - src[idxR+1]) + Math.abs(src[idx+2] - src[idxR+2]);
+      const gy = Math.abs(src[idx] - src[idxD]) + Math.abs(src[idx+1] - src[idxD+1]) + Math.abs(src[idx+2] - src[idxD+2]);
+      edgeEnergy += gx + gy;
+    }
+  }
+  edgeEnergy /= (patchW * patchH);
+
+  // Get top 3 colours
+  const sortedColours = Object.entries(colourBins).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  const dominantColours = sortedColours.map(([k]) => k.split(',').map(Number));
+
+  // Brightness and saturation
+  const brightness = (avgR + avgG + avgB) / 3;
+  const maxC = Math.max(avgR, avgG, avgB);
+  const minC = Math.min(avgR, avgG, avgB);
+  const saturation = maxC > 0 ? (maxC - minC) / maxC : 0;
+
+  for (let f = 0; f < numFrames; f++) {
+    const fc = document.createElement('canvas');
+    fc.width = patchW;
+    fc.height = patchH;
+    const fctx = fc.getContext('2d');
+
+    const style = f % 4; // rotate through different impression styles
+
+    if (style === 0) {
+      // Semantic impression: colour field with soft structure
+      const grad = fctx.createLinearGradient(
+        Math.random() * patchW, Math.random() * patchH,
+        Math.random() * patchW, Math.random() * patchH
+      );
+      const dc = dominantColours[f % dominantColours.length] || [avgR, avgG, avgB];
+      // Shift hue slightly
+      const shift = (Math.random() - 0.5) * 40;
+      grad.addColorStop(0, `rgb(${clamp(dc[0] + shift)}, ${clamp(dc[1] + shift * 0.7)}, ${clamp(dc[2] - shift * 0.3)})`);
+      grad.addColorStop(1, `rgb(${clamp(avgR - shift * 0.5)}, ${clamp(avgG + shift * 0.3)}, ${clamp(avgB + shift)})`);
+      fctx.fillStyle = grad;
+      fctx.fillRect(0, 0, patchW, patchH);
+
+      // Add texture noise proportional to edge energy
+      if (edgeEnergy > 5) {
+        const noiseData = fctx.getImageData(0, 0, patchW, patchH);
+        for (let i = 0; i < noiseData.data.length; i += 4) {
+          const n = (Math.random() - 0.5) * edgeEnergy * 2;
+          noiseData.data[i] = clamp(noiseData.data[i] + n);
+          noiseData.data[i+1] = clamp(noiseData.data[i+1] + n);
+          noiseData.data[i+2] = clamp(noiseData.data[i+2] + n);
+        }
+        fctx.putImageData(noiseData, 0, 0);
+      }
+    } else if (style === 1) {
+      // Structural impression: edge-like shapes in patch colours
+      fctx.fillStyle = `rgb(${avgR|0}, ${avgG|0}, ${avgB|0})`;
+      fctx.fillRect(0, 0, patchW, patchH);
+
+      // Draw abstract shapes based on edge directions
+      const numShapes = 2 + Math.floor(edgeEnergy / 8);
+      for (let s = 0; s < numShapes; s++) {
+        const dc = dominantColours[s % dominantColours.length] || [avgR, avgG, avgB];
+        fctx.strokeStyle = `rgba(${dc[0]}, ${dc[1]}, ${dc[2]}, 0.6)`;
+        fctx.lineWidth = 1 + Math.random() * 3;
+        fctx.beginPath();
+        fctx.moveTo(Math.random() * patchW, Math.random() * patchH);
+        fctx.quadraticCurveTo(
+          Math.random() * patchW, Math.random() * patchH,
+          Math.random() * patchW, Math.random() * patchH
+        );
+        fctx.stroke();
+      }
+    } else if (style === 2) {
+      // Structural echo: what else in the world has this shape/colour pattern?
+      // Use the actual patch data but warp it — rotate, mirror, recolour
+      fctx.putImageData(patchImageData, 0, 0);
+
+      // Apply a transformation: flip, rotate, or colour-shift
+      const transform = f % 3;
+      if (transform === 0) {
+        // Horizontal flip — structurally similar, semantically different
+        fctx.save();
+        fctx.translate(patchW, 0);
+        fctx.scale(-1, 1);
+        fctx.drawImage(fc, 0, 0);
+        fctx.restore();
+      } else if (transform === 1) {
+        // Rotate 90° — dark curve becomes different object
+        const temp = document.createElement('canvas');
+        temp.width = patchW; temp.height = patchH;
+        temp.getContext('2d').drawImage(fc, 0, 0);
+        fctx.clearRect(0, 0, patchW, patchH);
+        fctx.save();
+        fctx.translate(patchW / 2, patchH / 2);
+        fctx.rotate(Math.PI / 2);
+        fctx.drawImage(temp, -patchW / 2, -patchH / 2);
+        fctx.restore();
+      }
+      // Recolour with complementary hue
+      const imgd = fctx.getImageData(0, 0, patchW, patchH);
+      const hueShiftAmount = 60 + Math.random() * 120;
+      for (let i = 0; i < imgd.data.length; i += 4) {
+        const [hh, ss, ll] = rgbToHsl(imgd.data[i], imgd.data[i+1], imgd.data[i+2]);
+        const [nr, ng, nb] = hslToRgb((hh + hueShiftAmount / 360) % 1, ss, ll);
+        imgd.data[i] = nr;
+        imgd.data[i+1] = ng;
+        imgd.data[i+2] = nb;
+      }
+      fctx.putImageData(imgd, 0, 0);
+
+      // Slight blur to soften
+      const tinyS = document.createElement('canvas');
+      const ts = Math.max(2, Math.floor(Math.min(patchW, patchH) / 3));
+      tinyS.width = ts; tinyS.height = ts;
+      tinyS.getContext('2d').drawImage(fc, 0, 0, ts, ts);
+      fctx.imageSmoothingEnabled = true;
+      fctx.drawImage(tinyS, 0, 0, patchW, patchH);
+    } else {
+      // Blurred/defocused version of actual patch data
+      fctx.putImageData(patchImageData, 0, 0);
+      // Heavy blur via scale down and back up
+      const tiny = document.createElement('canvas');
+      const tinySize = Math.max(2, Math.floor(Math.min(patchW, patchH) / 4));
+      tiny.width = tinySize;
+      tiny.height = tinySize;
+      tiny.getContext('2d').drawImage(fc, 0, 0, tinySize, tinySize);
+      fctx.clearRect(0, 0, patchW, patchH);
+      fctx.imageSmoothingEnabled = true;
+      fctx.imageSmoothingQuality = 'low';
+      fctx.drawImage(tiny, 0, 0, patchW, patchH);
+      // Colour shift
+      const shift2 = fctx.getImageData(0, 0, patchW, patchH);
+      const hueShift = (Math.random() - 0.5) * 30;
+      for (let i = 0; i < shift2.data.length; i += 4) {
+        shift2.data[i] = clamp(shift2.data[i] + hueShift);
+        shift2.data[i+2] = clamp(shift2.data[i+2] - hueShift);
+      }
+      fctx.putImageData(shift2, 0, 0);
+    }
+
+    frames.push(fc);
+  }
+
+  return frames;
+}
+
+function clamp(v) {
+  return Math.max(0, Math.min(255, Math.round(v)));
+}
+
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+  if (max === min) { h = s = 0; }
+  else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  return [h, s, l];
+}
+
+function hslToRgb(h, s, l) {
+  if (s === 0) { const v = Math.round(l * 255); return [v, v, v]; }
+  const hue2rgb = (p, q, t) => {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1/6) return p + (q - p) * 6 * t;
+    if (t < 1/2) return q;
+    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+    return p;
+  };
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  return [
+    Math.round(hue2rgb(p, q, h + 1/3) * 255),
+    Math.round(hue2rgb(p, q, h) * 255),
+    Math.round(hue2rgb(p, q, h - 1/3) * 255)
+  ];
+}
+
+
+// ---- Shatter and setup ----
+function shatter() {
+  const variant = Math.floor(Math.random() * 4);
+  sourceCanvas = generateDemoScene(variant);
+  shatterFromSource();
+}
+
+function shatterFromSource() {
+  cleanup();
+  const srcCtx = sourceCanvas.getContext('2d');
+  patchData = [];
+
+  const cols = PATCH_COLS;
+  const rows = PATCH_ROWS;
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const sx = col * PATCH_DIM;
+      const sy = row * PATCH_DIM;
+      const sw = Math.min(PATCH_DIM, ASSEMBLY_W - sx);
+      const sh = Math.min(PATCH_DIM, ASSEMBLY_H - sy);
+
+      if (sw <= 0 || sh <= 0) continue;
+
+      const imgData = srcCtx.getImageData(sx, sy, sw, sh);
+      const frames = generateFlickerFrames(imgData, sw, sh, 16);
+
+      // Initial layout: loose sequence with some scatter
+      // Patches laid out in rows with gaps, slight randomness
+      const seqIdx = patchData.length;
+      const layoutCols = PATCH_COLS + 1; // slightly wider spacing
+      const layoutRow = Math.floor(seqIdx / layoutCols);
+      const layoutCol = seqIdx % layoutCols;
+      const spacingX = (ASSEMBLY_W - sw) / (layoutCols - 0.5);
+      const spacingY = (ASSEMBLY_H - sh) / (PATCH_ROWS + 0.5);
+      const initX = layoutCol * spacingX + (Math.random() - 0.5) * 15;
+      const initY = layoutRow * spacingY + (Math.random() - 0.5) * 10;
+
+      // Create DOM element
+      const el = document.createElement('div');
+      el.className = 'patch-el';
+      el.style.width = sw + 'px';
+      el.style.height = sh + 'px';
+      el.style.left = initX + 'px';
+      el.style.top = initY + 'px';
+
+      const patchCanvas = document.createElement('canvas');
+      patchCanvas.width = sw;
+      patchCanvas.height = sh;
+      el.appendChild(patchCanvas);
+      assembly.appendChild(el);
+
+      const pd = {
+        el,
+        canvas: patchCanvas,
+        ctx: patchCanvas.getContext('2d'),
+        cx: initX,
+        cy: initY,
+        w: sw,
+        h: sh,
+        homeX: sx, // original position in source
+        homeY: sy,
+        driftVX: (Math.random() - 0.5) * 0.3,
+        driftVY: (Math.random() - 0.5) * 0.3,
+        frames,
+        frameIdx: Math.floor(Math.random() * frames.length),
+        col, row
+      };
+
+      patchData.push(pd);
+    }
+  }
+
+  startFlicker();
+  startDrift();
+
+  document.getElementById('hint').textContent =
+    'Drag the patches. Try to assemble something coherent — but they drift, and the impressions keep shifting.';
+}
+
+
+// ---- Flicker animation ----
+function startFlicker() {
+  stopFlicker();
+  flickerTick();
+}
+
+function flickerTick() {
+  const speed = parseInt(document.getElementById('flicker-speed').value);
+  const intervalMs = Math.max(30, 300 - speed * 28); // 30ms to 300ms
+
+  patchData.forEach(pd => {
+    pd.frameIdx = (pd.frameIdx + 1) % pd.frames.length;
+    pd.ctx.clearRect(0, 0, pd.w, pd.h);
+    pd.ctx.drawImage(pd.frames[pd.frameIdx], 0, 0);
+  });
+
+  flickerInterval = setTimeout(flickerTick, intervalMs);
+}
+
+function stopFlicker() {
+  if (flickerInterval) {
+    clearTimeout(flickerInterval);
+    flickerInterval = null;
+  }
+}
+
+
+// ---- Drift ----
+function startDrift() {
+  stopDrift();
+  driftTick();
+}
+
+function driftTick() {
+  const driftSpeed = parseInt(document.getElementById('drift-speed').value);
+  if (driftSpeed === 0) {
+    driftInterval = setTimeout(driftTick, 200);
+    return;
+  }
+
+  const factor = driftSpeed * 0.1;
+
+  patchData.forEach(pd => {
+    if (pd === dragging) return; // don't drift the one being dragged
+
+    pd.cx += pd.driftVX * factor;
+    pd.cy += pd.driftVY * factor;
+
+    // Bounce off edges
+    if (pd.cx < -pd.w * 0.5 || pd.cx > ASSEMBLY_W - pd.w * 0.5) {
+      pd.driftVX *= -1;
+      pd.cx = Math.max(-pd.w * 0.5, Math.min(ASSEMBLY_W - pd.w * 0.5, pd.cx));
+    }
+    if (pd.cy < -pd.h * 0.5 || pd.cy > ASSEMBLY_H - pd.h * 0.5) {
+      pd.driftVY *= -1;
+      pd.cy = Math.max(-pd.h * 0.5, Math.min(ASSEMBLY_H - pd.h * 0.5, pd.cy));
+    }
+
+    // Slowly change drift direction
+    pd.driftVX += (Math.random() - 0.5) * 0.02;
+    pd.driftVY += (Math.random() - 0.5) * 0.02;
+    // Clamp drift speed
+    const maxDrift = 0.5;
+    pd.driftVX = Math.max(-maxDrift, Math.min(maxDrift, pd.driftVX));
+    pd.driftVY = Math.max(-maxDrift, Math.min(maxDrift, pd.driftVY));
+
+    pd.el.style.left = pd.cx + 'px';
+    pd.el.style.top = pd.cy + 'px';
+  });
+
+  driftInterval = setTimeout(driftTick, 50);
+}
+
+function stopDrift() {
+  if (driftInterval) {
+    clearTimeout(driftInterval);
+    driftInterval = null;
+  }
+}
+
+
+// ---- Drag interaction ----
+function getScaledPointerPos(e) {
+  const rect = assembly.getBoundingClientRect();
+  const scaleX = ASSEMBLY_W / rect.width;
+  const scaleY = ASSEMBLY_H / rect.height;
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top) * scaleY
+  };
+}
+
+assembly.addEventListener('pointerdown', (e) => {
+  const patch = e.target.closest('.patch-el');
+  if (!patch) return;
+
+  const pd = patchData.find(p => p.el === patch);
+  if (!pd) return;
+
+  dragging = pd;
+  patch.classList.add('dragging');
+  patch.setPointerCapture(e.pointerId);
+
+  const pos = getScaledPointerPos(e);
+  dragOffsetX = pos.x - pd.cx;
+  dragOffsetY = pos.y - pd.cy;
+
+  e.preventDefault();
+});
+
+assembly.addEventListener('pointermove', (e) => {
+  if (!dragging) return;
+
+  const pos = getScaledPointerPos(e);
+  dragging.cx = pos.x - dragOffsetX;
+  dragging.cy = pos.y - dragOffsetY;
+
+  // Keep in bounds
+  dragging.cx = Math.max(-dragging.w * 0.5, Math.min(ASSEMBLY_W - dragging.w * 0.5, dragging.cx));
+  dragging.cy = Math.max(-dragging.h * 0.5, Math.min(ASSEMBLY_H - dragging.h * 0.5, dragging.cy));
+
+  dragging.el.style.left = dragging.cx + 'px';
+  dragging.el.style.top = dragging.cy + 'px';
+
+  e.preventDefault();
+});
+
+assembly.addEventListener('pointerup', (e) => {
+  if (!dragging) return;
+  dragging.el.classList.remove('dragging');
+  dragging = null;
+});
+
+
+// ---- Reveal ----
+function reveal() {
+  if (!sourceCanvas || patchData.length === 0) return;
+
+  const overlay = document.getElementById('reveal-overlay');
+  overlay.classList.add('visible');
+
+  // Snapshot current assembly
+  const snapCanvas = document.getElementById('assembly-snapshot');
+  snapCanvas.width = ASSEMBLY_W;
+  snapCanvas.height = ASSEMBLY_H;
+  const snapCtx = snapCanvas.getContext('2d');
+  snapCtx.fillStyle = '#0d0d14';
+  snapCtx.fillRect(0, 0, ASSEMBLY_W, ASSEMBLY_H);
+
+  // Draw each patch at its current position using the blurred/defocused frame (style 3)
+  // which is closest to the actual patch content
+  patchData.forEach(pd => {
+    // Use the last frame group (style 3 = blurred actual) for the snapshot
+    const blurFrame = pd.frames[pd.frames.length - 1];
+    snapCtx.drawImage(blurFrame, pd.cx, pd.cy);
+  });
+
+  // Show source
+  const srcReveal = document.getElementById('source-reveal');
+  srcReveal.width = ASSEMBLY_W;
+  srcReveal.height = ASSEMBLY_H;
+  srcReveal.getContext('2d').drawImage(sourceCanvas, 0, 0);
+}
+
+
+// ---- Cleanup ----
+function cleanup() {
+  stopFlicker();
+  stopDrift();
+  patchData = [];
+  assembly.innerHTML = '';
+  dragging = null;
+}
+
+
+// ---- Image upload ----
+function loadImageAndShatter(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = ASSEMBLY_W;
+      c.height = ASSEMBLY_H;
+      const cx = c.getContext('2d');
+      // Scale to fit, centred
+      const scale = Math.min(ASSEMBLY_W / img.width, ASSEMBLY_H / img.height);
+      const dw = img.width * scale;
+      const dh = img.height * scale;
+      cx.fillStyle = '#0a0a0f';
+      cx.fillRect(0, 0, ASSEMBLY_W, ASSEMBLY_H);
+      cx.drawImage(img, (ASSEMBLY_W - dw) / 2, (ASSEMBLY_H - dh) / 2, dw, dh);
+      sourceCanvas = c;
+      shatterFromSource();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ---- Event bindings ----
+document.getElementById('btn-shatter').addEventListener('click', shatter);
+document.getElementById('image-upload').addEventListener('change', (e) => {
+  if (e.target.files[0]) loadImageAndShatter(e.target.files[0]);
+});
+document.getElementById('btn-reveal').addEventListener('click', reveal);
+document.getElementById('btn-close-reveal').addEventListener('click', () => {
+  document.getElementById('reveal-overlay').classList.remove('visible');
+});
+
+// Close reveal on Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.getElementById('reveal-overlay').classList.remove('visible');
+  }
+});
+
+// Responsive sizing — use CSS transform to keep patch coordinate space intact
+function resize() {
+  const maxW = Math.min(640, window.innerWidth - 40);
+  const scale = maxW / ASSEMBLY_W;
+  assembly.style.width = ASSEMBLY_W + 'px';
+  assembly.style.height = ASSEMBLY_H + 'px';
+  assembly.style.transform = `scale(${scale})`;
+  assembly.style.transformOrigin = 'top left';
+  // Wrap in a container that respects the scaled size
+  const wrapper = assembly.parentElement;
+  if (wrapper) {
+    wrapper.style.width = maxW + 'px';
+    wrapper.style.height = (ASSEMBLY_H * scale) + 'px';
+  }
+}
+resize();
+window.addEventListener('resize', resize);
+</script>
+
+</body>
+</html>

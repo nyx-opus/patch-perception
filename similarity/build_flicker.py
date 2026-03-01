@@ -69,19 +69,27 @@ def build_flicker_html(
             "alternatives": [],
             "terms": [],
             "captions": [],
+            "confidence": 0,  # top CLIP similarity score
         })
 
     # Load descriptions if available
     if descriptions:
         desc_map = {}
+        conf_map = {}
         for p in descriptions.get("patches", []):
-            desc_map[(p["row"], p["col"])] = [
-                d["term"] for d in p.get("descriptions", [])
-            ]
+            descs = p.get("descriptions", [])
+            desc_map[(p["row"], p["col"])] = [d["term"] for d in descs]
+            # Top similarity score as confidence measure
+            if descs:
+                conf_map[(p["row"], p["col"])] = descs[0].get(
+                    "similarity", descs[0].get("score", 0)
+                )
         for pd in patch_data:
             key = (pd["row"], pd["col"])
             if key in desc_map:
                 pd["terms"] = desc_map[key]
+            if key in conf_map:
+                pd["confidence"] = round(conf_map[key], 4)
 
     # Load creative captions if available
     if captions:
@@ -307,6 +315,7 @@ def build_flicker_html(
 <div class="controls">
   <button class="mode-btn active" data-mode="flicker">Flicker</button>
   <button class="mode-btn" data-mode="dissolve">Dissolve</button>
+  <button class="mode-btn" data-mode="breathe">Breathe</button>
   <button class="mode-btn" data-mode="original">Original</button>
   <button class="mode-btn" data-mode="grid">Grid</button>
   <button class="mode-btn" data-mode="side-by-side">Side by Side</button>
@@ -335,6 +344,7 @@ def build_flicker_html(
   For patches with high ambiguity, we asked: <em>what else could this be?</em> and generated alternatives.
   The flicker shows you the perceptual boundary — the moment where hedgehog spines become feathers,
   where a snout becomes any animal's face, where texture dissolves into material.
+  <em>Breathe</em> mode makes uncertain patches flicker faster — the image shimmers where the model is least sure.
 </div>
 
 <div class="footer">Nyx & Amy — patch-perception 2026</div>
@@ -442,7 +452,7 @@ function render() {{
     const dx = p.col * (ps.w + gap);
     const dy = p.row * (ps.h + gap);
 
-    if (mode === 'dissolve' && flickerState.has(i)) {{
+    if ((mode === 'dissolve' || mode === 'breathe') && flickerState.has(i)) {{
       // Crossfade: draw original at (1-blend), alt at blend
       const state = flickerState.get(i);
       const origImg = patchImages.get(`${{i}}_orig`);
@@ -543,10 +553,25 @@ function startFlicker() {{
     const now = Date.now();
     flickerState.forEach((state, i) => {{
       const patch = PATCHES[i];
-      // Use sine wave with unique phase for organic feel
-      const t = (now / speed + state.phase) % (Math.PI * 2);
 
-      if (mode === 'dissolve') {{
+      // In breathe mode, speed varies per patch based on confidence
+      let patchSpeed = speed;
+      if (mode === 'breathe') {{
+        // Low confidence → fast flicker (high uncertainty = alive with possibility)
+        // High confidence → slow dissolve (settled, resolved)
+        // confidence typically 0.22-0.31, map to speed multiplier
+        const conf = patch.confidence || 0.25;
+        const minConf = 0.22, maxConf = 0.31;
+        const norm = Math.max(0, Math.min(1, (conf - minConf) / (maxConf - minConf)));
+        // norm: 0 = low confidence (uncertain), 1 = high confidence (certain)
+        // speed multiplier: uncertain patches 0.3x speed (fast), certain patches 3x speed (slow)
+        patchSpeed = speed * (0.3 + norm * 2.7);
+      }}
+
+      // Use sine wave with unique phase for organic feel
+      const t = (now / patchSpeed + state.phase) % (Math.PI * 2);
+
+      if (mode === 'dissolve' || mode === 'breathe') {{
         // Smooth sine blend: 0 to 1 and back
         const raw = (Math.sin(t) + 1) / 2; // 0..1
         const prev = state.blend;
@@ -655,7 +680,7 @@ document.querySelectorAll('.mode-btn').forEach(btn => {{
     btn.classList.add('active');
     mode = btn.dataset.mode;
 
-    if (mode === 'flicker' || mode === 'dissolve') {{
+    if (mode === 'flicker' || mode === 'dissolve' || mode === 'breathe') {{
       startFlicker();
     }} else {{
       stopFlicker();

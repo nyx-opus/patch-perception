@@ -39,10 +39,17 @@ def build_flicker_html(
     descriptions_path: str | None = None,
     captions_path: str | None = None,
     grid_size: int = 4,
+    max_width: int = 800,
 ) -> str:
     """Build the complete HTML string with embedded images."""
 
     source = Image.open(source_path).convert("RGB")
+    # Downsample to keep HTML file size reasonable
+    if source.width > max_width:
+        ratio = max_width / source.width
+        new_h = int(source.height * ratio)
+        source = source.resize((max_width, new_h), Image.LANCZOS)
+        print(f"  Downsampled to {max_width}x{new_h}")
     manifest = json.loads(Path(manifest_path).read_text())
     gen_dir = Path(manifest_path).parent
 
@@ -238,10 +245,15 @@ def build_flicker_html(
     border-radius: 4px;
     overflow: hidden;
     cursor: crosshair;
+    max-width: 90vw;
+    max-height: 70vh;
   }}
 
   .grid-container canvas {{
     display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
   }}
 
   .tooltip {{
@@ -322,8 +334,8 @@ def build_flicker_html(
 
   <div class="control-group">
     <label>Speed:</label>
-    <input type="range" id="speed" min="200" max="3000" value="800" step="100">
-    <span id="speed-val">0.8s</span>
+    <input type="range" id="speed" min="50" max="3000" value="150" step="50">
+    <span id="speed-val">0.15s</span>
   </div>
 
   <div class="control-group">
@@ -592,7 +604,7 @@ function startFlicker() {{
       }}
     }});
     render();
-  }}, 50); // 20fps render loop, flicker timing controlled by speed
+  }}, 16); // ~60fps render loop, flicker timing controlled by speed
 }}
 
 function stopFlicker() {{
@@ -729,6 +741,8 @@ def main():
     parser.add_argument("--grid", type=int, default=4, help="Grid size (default: 4)")
     parser.add_argument("--output", "-o", default="flicker.html",
                         help="Output HTML file (default: flicker.html)")
+    parser.add_argument("--max-width", type=int, default=800,
+                        help="Max image width in pixels (default: 800)")
     args = parser.parse_args()
 
     if not Path(args.image).exists():
@@ -749,6 +763,7 @@ def main():
         args.descriptions,
         args.captions,
         args.grid,
+        args.max_width,
     )
 
     output_path = Path(args.output)

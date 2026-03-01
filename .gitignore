@@ -1,6 +1,13 @@
 similarity/venv/
 similarity/*.npz
 similarity/export/
+similarity/test_images/
+similarity/test_export/
+similarity/hedgehog_export/
+similarity/generated/
+similarity/hedgehog_generated/
+similarity/*_desc.json
+*-flicker.html
 __pycache__/
 *.pyc
 .DS_Store

@@ -1,0 +1,23 @@
+{
+  "source_image": "test_images/diningroom-evening.jpg",
+  "grid_size": 4,
+  "model": "meta/llama-4-scout-instruct",
+  "prompt": "You are looking at a small cropped fragment from a larger photograph. You have no idea what the full image shows. Looking only at this fragment, list 5 wildly different things this fragment could be part of. Be creative and specific. Format: one per line, no numbering.",
+  "patches": [
+    {
+      "row": 0,
+      "col": 0,
+      "caption": "A close-up of a colorful coral reef teeming with tropical fish, with sea anemones swaying in the current.\n\nA detailed view of a Renaissance painting, showcasing intricate folds of fabric and ornate jewelry worn by a noblewoman.\n\nA microscopic image of a cross-section of a tree trunk, highlighting the unique patterns of growth rings and cellular structure.\n\nA fragment of a futuristic cityscape, featuring a sleek metallic skyscraper with neon lights reflecting off its surface.\n\nA still life from a 19th-century French kitchen, focusing on a delicate porcelain vase filled with fresh flowers and a scattering of crumbs on a lace tablecloth."
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "caption": "A close-up of a Victorian-era lady's intricately beaded necklace, glinting in the light of a gaslamp.\n\nA tendril of eerie, bioluminescent underwater plant life, swaying gently in the currents of a deep-sea trench.\n\nThe cracked and weathered surface of a centuries-old, abandoned road, stretching out to a vanishing point on the horizon.\n\nA detail of a ancient, illuminated manuscript, showcasing the intricate calligraphy and ornate borders of a medieval bestiary.\n\nThe shimmering, iridescent scales of a dragonfly's wing, beating rapidly as it hovers above a sun-drenched pond."
+    },
+    {
+      "row": 2,
+      "col": 3,
+      "caption": "A close-up of a futuristic spaceship's control panel, with the fragment showing a cluster of blinking buttons and a curved screen.\n\nA microscopic view of a slice of moldy bread, with the fragment capturing a dense tangle of fungal hyphae and spores.\n\nA detail from a 19th-century oil painting, depicting the intricate lace trim on a noblewoman's dress.\n\nA snippet of a psychedelic mural from a 1960s-era music festival, featuring swirling patterns of brightly colored flowers and geometric shapes.\n\nA section of a computer-generated model of a dinosaur's brain, highlighting the neural connections and synapses in a vibrant, 3D visualization."
+    }
+  ]
+}

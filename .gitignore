@@ -6,7 +6,10 @@ similarity/test_export/
 similarity/hedgehog_export/
 similarity/generated/
 similarity/hedgehog_generated/
+similarity/parrot_generated/
+similarity/diningroom_generated/
 similarity/*_desc.json
+similarity/*_confidence*.png
 *-flicker.html
 __pycache__/
 *.pyc

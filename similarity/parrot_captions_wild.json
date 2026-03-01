@@ -1,0 +1,38 @@
+{
+  "source_image": "test_images/parrot.jpg",
+  "grid_size": 4,
+  "model": "meta/llama-4-scout-instruct",
+  "prompt": "You are looking at a small cropped fragment from a larger photograph. You have no idea what the full image shows. Looking only at this fragment, list 5 wildly different things this fragment could be part of. Be creative and specific. Format: one per line, no numbering.",
+  "patches": [
+    {
+      "row": 1,
+      "col": 1,
+      "caption": "A close-up of a futuristic spaceship's control panel, with blinking lights and metallic textures.\n\nA detail from a medieval illuminated manuscript, featuring intricate floral patterns and gilded filigree.\n\nA section of a psychedelic mural depicting a fantastical underwater city, complete with rainbow-colored sea creatures.\n\nA fragment of a botanical garden's stone fountain, showcasing carved foliage and worn marble.\n\nA snippet of a cyberpunk-inspired graffiti mural, highlighting neon-lit circuitry and urban decay."
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "caption": "A close-up of a futuristic spaceship's control panel, with the fragment showing a cluster of blinking buttons and a small viewscreen.\n\nA microscopic image of a rare type of fungi, with the fragment revealing a intricate network of branching hyphae.\n\nA still life painting of a lavish feast, with the fragment focusing on a delicate crystal glass filled with a rich, red wine.\n\nA detailed architectural model of an ancient temple, with the fragment showing a intricately carved stone column.\n\nA surreal dreamscape of a melting cityscape, with the fragment capturing a distorted, Dal\u00ed-esque clock tower sinking into the ground."
+    },
+    {
+      "row": 2,
+      "col": 0,
+      "caption": "A close-up of a colorful coral reef, with the fragment showing a small section of brain coral and a few sea anemones.\n\nA detailed shot of a stained glass window, with the fragment depicting a section of intricate blue and green glasswork.\n\nA microscopic view of a cell, with the fragment showing a portion of the cell membrane and some organelles.\n\nA fragment of a vibrant Indian textile, with the piece showing a small section of embroidered flowers and leaves.\n\nA slice of a psychedelic mural, with the fragment displaying a swirling pattern of bright pink and purple hues."
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "caption": "A close-up of a colorful coral reef teeming with exotic fish and sea anemones\nA detailed view of a 19th-century French impressionist painting, showcasing intricate brushstrokes and vibrant colors\nA microscopic image of a cross-section of a rare, iridescent mineral formation\nA fragment of a futuristic cityscape, highlighting sleek skyscrapers and neon-lit advertisements\nA detailed section of a medieval illuminated manuscript, featuring intricate calligraphy and ornate gold leaf designs"
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "caption": "A close-up of a metallic spaceship hull, damaged in a catastrophic collision with an asteroid.\n\nA detail from a 19th-century oil painting, depicting the intricate patterns on the sleeve of a noblewoman.\n\nA microscopic view of a peculiarly arranged cluster of crystals in a rock sample from a remote geological site.\n\nA fragment of a psychedelic mural, showcasing swirling patterns of bright purple and green hues.\n\nA section of a medieval illuminated manuscript, featuring an ornate border of golden filigree and mythical creatures."
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "caption": "A close-up of a metallic spaceship hull, damaged in a catastrophic collision with an asteroid.\n\nA detail from a 19th-century oil painting of a lavish ballroom, depicting intricate moldings on a velvet-draped wall.\n\nA microscopic view of a peculiarly arranged crystal formation within a laboratory-grown superconductor.\n\nA fragment of the hull of the Mary Rose, Henry VIII's favorite warship, showing weathered wooden planks.\n\nA still from a science fiction film, capturing the eerie glow of bioluminescent tendrils on an alien creature's skin."
+    }
+  ]
+}

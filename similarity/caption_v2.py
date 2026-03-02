@@ -28,7 +28,7 @@ import urllib.request
 from pathlib import Path
 
 from PIL import Image
-from embed_patches import split_into_patches
+from patch_utils import split_into_patches
 
 
 # Model registry: models that need version-based API endpoint

@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 from PIL import Image
-from embed_patches import split_into_patches
+from patch_utils import split_into_patches
 from img2img import generate_text2img, generate_canny, generate_img2img
 
 

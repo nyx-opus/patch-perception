@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 
 from PIL import Image
-from embed_patches import split_into_patches
+from patch_utils import split_into_patches
 
 
 def image_to_b64(image: Image.Image, fmt: str = "PNG") -> str:

@@ -189,6 +189,8 @@ def main():
     ]
     if desc_file.exists():
         build_cmd += ["--descriptions", str(desc_file)]
+    if variance_file.exists():
+        build_cmd += ["--variance", str(variance_file)]
 
     if not run_step(
         "Step 5/5: Build flicker HTML",

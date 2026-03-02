@@ -38,6 +38,7 @@ def build_flicker_html(
     manifest_path: str,
     descriptions_path: str | None = None,
     captions_path: str | None = None,
+    variance_path: str | None = None,
     grid_size: int = 4,
     max_width: int = 800,
 ) -> str:
@@ -60,6 +61,10 @@ def build_flicker_html(
     captions = None
     if captions_path:
         captions = json.loads(Path(captions_path).read_text())
+
+    variance_data = None
+    if variance_path:
+        variance_data = json.loads(Path(variance_path).read_text())
 
     # Split source into patches
     patches = split_into_patches(source, grid_size)
@@ -111,6 +116,24 @@ def build_flicker_html(
             key = (pd["row"], pd["col"])
             if key in cap_map:
                 pd["captions"] = cap_map[key]
+
+    # Load variance data if available (overrides description-based confidence)
+    if variance_data:
+        var_map = {}
+        for p in variance_data.get("patches", []):
+            full = p.get("full", p)  # support both nested and flat formats
+            var_map[(p["row"], p["col"])] = full.get("variance", 0)
+        if var_map:
+            variances = list(var_map.values())
+            min_var = min(variances)
+            max_var = max(variances)
+            var_range = max_var - min_var if max_var > min_var else 1
+            for pd in patch_data:
+                key = (pd["row"], pd["col"])
+                if key in var_map:
+                    # Map variance to confidence: low variance = high confidence
+                    norm = (var_map[key] - min_var) / var_range  # 0=most confident, 1=most uncertain
+                    pd["confidence"] = round(1.0 - norm, 4)  # invert: high confidence = slow flicker
 
     # Load generated alternatives from manifest
     alt_map = {}
@@ -571,10 +594,17 @@ function startFlicker() {{
       if (mode === 'breathe') {{
         // Low confidence → fast flicker (high uncertainty = alive with possibility)
         // High confidence → slow dissolve (settled, resolved)
-        // confidence typically 0.22-0.31, map to speed multiplier
+        // When variance data is used, confidence is 0.0-1.0 (normalized)
+        // When CLIP descriptions are used, confidence is typically 0.22-0.31
         const conf = patch.confidence || 0.25;
-        const minConf = 0.22, maxConf = 0.31;
-        const norm = Math.max(0, Math.min(1, (conf - minConf) / (maxConf - minConf)));
+        let norm;
+        if (conf > 0.5) {{
+          // Variance-based: already 0-1 range
+          norm = conf;
+        }} else {{
+          // CLIP-based: map from 0.22-0.31 range
+          norm = Math.max(0, Math.min(1, (conf - 0.22) / 0.09));
+        }}
         // norm: 0 = low confidence (uncertain), 1 = high confidence (certain)
         // speed multiplier: uncertain patches 0.3x speed (fast), certain patches 3x speed (slow)
         patchSpeed = speed * (0.3 + norm * 2.7);
@@ -738,6 +768,7 @@ def main():
     parser.add_argument("manifest", help="Generated alternatives manifest (JSON)")
     parser.add_argument("--descriptions", "-d", help="CLIP descriptions JSON")
     parser.add_argument("--captions", "-c", help="Vision model captions JSON")
+    parser.add_argument("--variance", "-v", help="Variance measurement JSON (from measure_variance.py)")
     parser.add_argument("--grid", type=int, default=4, help="Grid size (default: 4)")
     parser.add_argument("--output", "-o", default="flicker.html",
                         help="Output HTML file (default: flicker.html)")
@@ -762,6 +793,7 @@ def main():
         args.manifest,
         args.descriptions,
         args.captions,
+        args.variance,
         args.grid,
         args.max_width,
     )

@@ -39,6 +39,7 @@ def build_flicker_html(
     descriptions_path: str | None = None,
     captions_path: str | None = None,
     variance_path: str | None = None,
+    curated_dir: str | None = None,
     grid_size: int = 4,
     max_width: int = 800,
 ) -> str:
@@ -161,6 +162,36 @@ def build_flicker_html(
         key = (pd["row"], pd["col"])
         if key in alt_map:
             pd["alternatives"] = alt_map[key]
+
+    # Load curated images from directory (naming: patch_R_C_*.png or .jpg)
+    if curated_dir:
+        curated_path = Path(curated_dir)
+        if curated_path.is_dir():
+            import glob as glob_mod
+            curated_count = 0
+            for img_file in sorted(curated_path.iterdir()):
+                if not img_file.suffix.lower() in ('.png', '.jpg', '.jpeg', '.webp'):
+                    continue
+                # Parse patch_R_C from filename
+                name = img_file.stem
+                parts = name.split('_')
+                if len(parts) >= 3 and parts[0] == 'patch':
+                    try:
+                        r, c = int(parts[1]), int(parts[2])
+                        patch_idx = r * grid_size + c
+                        if 0 <= patch_idx < len(patch_data):
+                            alt_img = Image.open(img_file).convert("RGB")
+                            alt_img = alt_img.resize(patches[patch_idx].size, Image.LANCZOS)
+                            patch_data[patch_idx]["alternatives"].append({
+                                "src": image_to_b64(alt_img),
+                                "terms": [],
+                                "prompt": f"curated: {img_file.name}",
+                            })
+                            curated_count += 1
+                    except (ValueError, IndexError):
+                        pass
+            if curated_count:
+                print(f"  Loaded {curated_count} curated images from {curated_dir}")
 
     # Source image as base64 for the overview
     source_b64 = image_to_b64(source)
@@ -375,11 +406,13 @@ def build_flicker_html(
 <div class="tooltip" id="tooltip"></div>
 
 <div class="info">
-  Each patch was independently described by CLIP — ranked against 169 vocabulary terms by visual similarity.
-  For patches with high ambiguity, we asked: <em>what else could this be?</em> and generated alternatives.
-  The flicker shows you the perceptual boundary — the moment where hedgehog spines become feathers,
-  where a snout becomes any animal's face, where texture dissolves into material.
+  The image is split into fragments. Each fragment is seen independently — by vision models that describe it,
+  by image models that redraw it as something it resembles but is not, and by a language model that measures
+  how uncertain it is about what it's looking at. The alternatives you see are not hallucinations. They are
+  other true readings of the same visual structure.
   <em>Breathe</em> mode makes uncertain patches flicker faster — the image shimmers where the model is least sure.
+  What you experience — the frustration of almost-recognition, the shiver when a patch resolves wrong —
+  is closer to the truth than any diagram of the process would be.
 </div>
 
 <div class="footer">Nyx & Amy — patch-perception 2026</div>
@@ -399,6 +432,24 @@ let flickerState = new Map(); // patch index -> {{ altIdx, showingAlt }}
 let patchImages = new Map(); // cache loaded images
 let sourceImg = null;
 let gap = 1;
+
+// Fisher-Yates shuffle — each patch gets its own random alt order
+function shuffleArray(arr) {{
+  for (let i = arr.length - 1; i > 0; i--) {{
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }}
+  return arr;
+}}
+
+// Build a shuffled index order for each patch's alternatives
+const shuffledAltOrders = new Map();
+PATCHES.forEach((p, i) => {{
+  if (p.alternatives.length > 1) {{
+    const order = Array.from({{ length: p.alternatives.length }}, (_, k) => k);
+    shuffledAltOrders.set(i, shuffleArray(order));
+  }}
+}});
 
 // Preload source image
 function loadSourceImage() {{
@@ -620,7 +671,9 @@ function startFlicker() {{
         state.blend = raw;
         // Cycle alternative when crossing back through zero
         if (raw < 0.05 && prev > 0.05) {{
-          state.altIdx = (state.altIdx + 1) % patch.alternatives.length;
+          state.seqIdx = ((state.seqIdx || 0) + 1) % patch.alternatives.length;
+          const order = shuffledAltOrders.get(i);
+          state.altIdx = order ? order[state.seqIdx] : state.seqIdx;
         }}
       }} else {{
         // Hard flicker
@@ -628,7 +681,9 @@ function startFlicker() {{
         if (shouldShowAlt !== state.showingAlt) {{
           state.showingAlt = shouldShowAlt;
           if (shouldShowAlt) {{
-            state.altIdx = (state.altIdx + 1) % patch.alternatives.length;
+            state.seqIdx = ((state.seqIdx || 0) + 1) % patch.alternatives.length;
+            const order = shuffledAltOrders.get(i);
+            state.altIdx = order ? order[state.seqIdx] : state.seqIdx;
           }}
         }}
       }}
@@ -769,6 +824,7 @@ def main():
     parser.add_argument("--descriptions", "-d", help="CLIP descriptions JSON")
     parser.add_argument("--captions", "-c", help="Vision model captions JSON")
     parser.add_argument("--variance", "-v", help="Variance measurement JSON (from measure_variance.py)")
+    parser.add_argument("--curated", help="Directory of curated images (naming: patch_R_C_name.png)")
     parser.add_argument("--grid", type=int, default=4, help="Grid size (default: 4)")
     parser.add_argument("--output", "-o", default="flicker.html",
                         help="Output HTML file (default: flicker.html)")
@@ -794,6 +850,7 @@ def main():
         args.descriptions,
         args.captions,
         args.variance,
+        args.curated,
         args.grid,
         args.max_width,
     )
